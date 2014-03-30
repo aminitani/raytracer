@@ -5,8 +5,6 @@ namespace RayMath
 {
 	#define LARGE_VAL 1e10
 
-	int testInt = 10;
-
 	double fdiv(double a, double b);
 	int sign(double x);
 	bool calc_root_of_linear(double & ret, double c1, double c0);
