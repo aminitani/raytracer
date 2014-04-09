@@ -1,13 +1,13 @@
 #Amin Itani
 #raytracer makefile
 
-raytracer: raytracer.o lodepng.o
-	g++ -o raytracer raytracer.o lodepng.o && rm -f *.o
+raytracer: main.o lodepng.o
+	g++ -o raytracer main.o lodepng.o && rm -f *.o
 
-raytracer.o: ./raytracer.cpp ./RayMath.h
-	g++ -Wall -c -std=c++11 -pthread raytracer.cpp
+main.o: ./main.cpp
+	g++ -Wall -c -std=c++11 -pthread main.cpp
 
-lodepng.o: ./png/lodepng.cpp ./png/lodepng.h
+lodepng.o: ./png/lodepng.cpp
 	g++ -Wall -c -std=c++11 -pthread ./png/lodepng.cpp
 
 clean:

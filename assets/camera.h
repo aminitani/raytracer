@@ -21,5 +21,5 @@ class Camera
 		}
 		
 		float XFov() {return xFov;}
-		float ARatio() {return ARatio;}
+		float ARatio() {return aRatio;}
 };
