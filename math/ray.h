@@ -18,7 +18,7 @@ class Ray
 			dir = inDir;
 		}
 		
-		Vec3 Point() { return point; }
+		Vec3 &Point() { return point; }
 		
-		Vec3 Direction() { return dir; }
+		Vec3 &Direction() { return dir; }
 };

@@ -3,23 +3,26 @@
 class Camera
 {
 	private:
-		Transform transform;
-		float xFov = 0;
+		Transform orientation;
+		float fovy = 0;
 		float aRatio = 0;
+		float vpd = 1;//view plane distance, not significant, assume 1
 	
 	public:
 		// Camera()
 		// {
-			// transform.Identify();
+			// orientation.Identify();
 		// }
 		
-		Camera(Transform inTransform, float inXFov, float inARatio)
+		Camera(Transform inTransform, float inFovy, float inARatio)
 		{
-			transform = inTransform;
-			xFov = inXFov;
+			orientation = inTransform;
+			fovy = inFovy;
 			aRatio = inARatio;
 		}
 		
-		float XFov() {return xFov;}
+		float Fovy() {return fovy;}
 		float ARatio() {return aRatio;}
+		float VPD() {return vpd;}
+		Transform Orientation() {return orientation;}
 };

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <cmath>
+#include <limits>
 #include "./RayMath.h"
 #include "./math/transform.h"
 #include "./assets/image.h"
@@ -18,18 +20,29 @@ class Raytracer
 		Image *image;
 		Camera *camera;
 		
-		void ComputePrimaryRay(unsigned x, unsigned y, Ray &primaryRay, Camera &camera)
+		void ComputePrimaryRay(unsigned x, unsigned y, Ray *primaryRay)
 		{
-			//
+			primaryRay->Point() = camera->Orientation().Pos();
+			//these are half the viewplane dimensions
+			//TODO: tan is a bad function. works for most reasonable values though.
+			float vert = tan(camera->Fovy() / 2.0) * camera->VPD();
+			float hor = vert * camera->ARatio();
+			Point VPCenter = camera->Orientation().Pos() + ( camera->Orientation().Forward() * camera->VPD() );
+			Point ULCorner = VPCenter + camera->Orientation().Left() * hor + camera->Orientation().Up() * vert;
+			// cout << "cameye: " << camera->Orientation().Pos() << " VPC: " << VPCenter << " ULC: " << ULCorner << endl;
+			Point target =
+			ULCorner - camera->Orientation().Left() * ( ((x+.5) / image->Width()) * 2*hor )
+			- camera->Orientation().Up() * ( ((y+.5) / image->Height()) * 2*vert );
+			primaryRay->Direction() = (target - camera->Orientation().Pos()).normalize();
 		}
 	
 	public:
 		Raytracer()
 		{
 			image = new Image(1280, 720, "test.png");
-			//camera is placed at (0,0,-5) and faces in the negative z direction, looking at origin
-			float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,-5.0,1.0};
-			camera = new Camera(Transform(camTrans), (float)55.0, (float)image->Width()/(float)image->Height());
+			//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
+			float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
+			camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, (float)image->Width()/(float)image->Height());
 		}
 		
 		~Raytracer()
@@ -40,17 +53,19 @@ class Raytracer
 		
 		void Start()
 		{
-			for (unsigned j = 0; j < image->Height(); ++j)
+			//iterate from upper left to lower right through all pixels
+			for (unsigned i = 0; i < image->Height(); ++i)
 			{
-				for (unsigned i = 0; i < image->Width(); ++i)
+				for (unsigned j = 0; j < image->Width(); ++j)
 				{
 					// compute primary ray direction
 					Ray primaryRay;
-		//			computePrimRay(i, j, &primaryRay);
+					ComputePrimaryRay(i, j, &primaryRay);
+					cout << "primary ray point: " << primaryRay.Point() << " Direction: " << primaryRay.Direction() << endl;
 					// shoot prim ray in the scene and search for intersection
 					Point pHit;
 					Normal nHit;
-		//			float minDist = INFINITY;
+					float minDist = std::numeric_limits<float>::infinity();
 		//			Object object = NULL;
 		//			for (int k = 0; k < objects.size(); ++k) {
 		//				if (Intersect(objects[k], primRay, &pHit, &nHit)) {

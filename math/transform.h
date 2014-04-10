@@ -28,7 +28,7 @@ class Transform
 			{
 				for(int j = 0; j < cols; j++)
 				{
-					contents[i][j] = (float)input[4 * rows + cols];
+					contents[i][j] = (float)input[4 * i + j];
 				}
 			}
 		}
@@ -88,7 +88,7 @@ class Transform
 		
 		const Vec3 Pos()
 		{
-			return Vec3((*this).GetIndex(0, 3), (*this).GetIndex(1, 3), (*this).GetIndex(2, 3));
+			return Vec3((*this).GetIndex(3, 0), (*this).GetIndex(3, 1), (*this).GetIndex(3, 2));
 		}
 		
 		Transform& operator=(const Transform& other)
