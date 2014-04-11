@@ -1,13 +1,32 @@
-#include "../math/vec3.h"
+#include "./object.h"
 
-class Sphere {
-private:
-	Vec3 center;
-	Vec3 color;
-	float radius;
+class Sphere : public Object {
 public:
-	Sphere();
-};
+	Vec3 center;
+	float radius;
+	float radius2;
+	Sphere(Vec3 c, float r, Vec3 _color) : center(c), Object(_color), radius(r), radius2(r*r) {}
 
-Sphere::Sphere(Vec3 _center, Vec3 _color, float r) : center(c), color(_color), radius(r) {
-}
+	virtual bool Intersect(Ray ray, float *t0 = NULL) const
+	{
+		Vec3 l = center - ray.Point();
+		float tca = l.dot(ray.Direction());
+		if (tca < 0) return false;
+		float d2 = l.dot(l) - tca * tca;
+		if (d2 > radius2) return false;
+		float thc = sqrt(radius2 - d2);
+		if (t0 != NULL) {
+			*t0 = tca - thc;
+			if(*t0 < 0)
+				*t0 = tca + thc;
+		}
+
+		return true;
+	}
+
+	virtual Vec3 Normal(Vec3 phit) {
+		Vec3 normal = phit - center;
+		normal.normalize();
+		return normal;
+	}
+};

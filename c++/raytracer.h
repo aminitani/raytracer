@@ -6,6 +6,8 @@
 #include "./math/transform.h"
 #include "./assets/image.h"
 #include "./assets/camera.h"
+#include "./assets/sphere.h"
+#include "./assets/triangle.h"
 #include "./math/ray.h"
 
 using std::cout; using std::endl;
@@ -19,6 +21,8 @@ class Raytracer
 	private:
 		Image *image;
 		Camera *camera;
+		vector<Object> objects;
+		Vec3 lightPosition;
 		
 		void ComputePrimaryRay(unsigned x, unsigned y, Ray *primaryRay)
 		{
@@ -35,6 +39,11 @@ class Raytracer
 			- camera->Orientation().Up() * ( ((y+.5) / image->Height()) * 2*vert );
 			primaryRay->Direction() = (target - camera->Orientation().Pos()).normalize();
 		}
+
+		void ConstructScene() {
+			lightPosition(3.0f,3.0f,3.0f);
+			objects.push_back(Sphere(Vec3(0.0f,0.0f,0.0f), 5f, Vec3(0.5f,0.0f,0.0f)));
+		}
 	
 	public:
 		Raytracer()
@@ -43,6 +52,7 @@ class Raytracer
 			//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
 			float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
 			camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, (float)image->Width()/(float)image->Height());
+			ConstructScene();
 		}
 		
 		~Raytracer()
@@ -66,29 +76,35 @@ class Raytracer
 					Point pHit;
 					Normal nHit;
 					float minDist = std::numeric_limits<float>::infinity();
-		//			Object object = NULL;
-		//			for (int k = 0; k < objects.size(); ++k) {
+					Object object = NULL;
+					for (int k = 0; k < objects.size(); ++k) {
 		//				if (Intersect(objects[k], primRay, &pHit, &nHit)) {
-		//					float distance = Distance(eyePosition, pHit);
-		//					if (distance < minDistance) {
-		//						object = objects[k];
-		//						minDistance = distance; // update min distance
-		//					}
-		//				}
-		//			}
-		//			if (object != NULL) {
+						if (objects[k].Intersect(primRay, &t0)) {
+							// float distance = Vec3::Distance(eyePosition, pHit);
+							if (t0 < minDistance) {
+								object = objects[k];
+								minDistance = t0; // update min distance
+							}
+						}
+					}
+					if (object != NULL) {
+						// compute phit and nhit
+						Vec3 phit = primRay.Point() + primRay.Direction() * minDist; // point of intersection
+						Vec3 nhit = object.Normal(phit);
+
 						// compute illumination
-		//				Ray shadowRay;
-		//				shadowRay.direction = lightPosition - pHit;
-		//				bool isShadow = false;
-		//				for (int k = 0; k < objects.size(); ++k) {
+						Ray shadowRay;
+						shadowRay.direction = lightPosition - pHit;
+						bool isShadow = false;
+						for (int k = 0; k < objects.size(); ++k) {
 		//					if (Intersect(objects[k], shadowRay)) {
-		//						isInShadow = true;
-		//						break;
-		//					}
-		//				}
-		//			}
-		//			if (!isInShadow)
+							if (objects[k].Intersect(shadowRay)) {
+								isInShadow = true;
+								break;
+							}
+						}
+					}
+					// if (!isInShadow)
 		//				pixels[i][j] = object->color * light.brightness;
 		//			else
 		//				pixels[i][j] = 0;
