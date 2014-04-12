@@ -18,7 +18,7 @@ class Raytracer
 	private:
 		Image *image;
 		Camera *camera;
-		vector<Object> objects;
+		vector<Object *> objects;
 		Vec3 lightPosition;
 		
 		void ComputePrimaryRay(unsigned x, unsigned y, Ray *primaryRay)
@@ -39,7 +39,7 @@ class Raytracer
 
 		void ConstructScene() {
 			lightPosition = Vec3(3.0,3.0,3.0);
-			Sphere sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0));
+			Sphere *sphere = new Sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0));
 			objects.push_back(sphere);
 			// objects.push_back(Sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0)));
 		}
@@ -85,10 +85,10 @@ class Raytracer
 					for (unsigned k = 0; k < objects.size(); ++k) {
 		//				if (Intersect(objects[k], primRay, &pHit, &nHit)) {
 						float t0 = std::numeric_limits<float>::infinity();
-						if (objects[k].Intersect(primaryRay, &t0)) {
+						if ((*objects[k]).Intersect(primaryRay, &t0)) {
 							// float distance = Vec3::Distance(eyePosition, pHit);
 							if (t0 < minDist) {
-								(*object) = objects[k];
+								object = objects[k];
 								minDist = t0; // update min distance
 							}
 						}
@@ -105,7 +105,7 @@ class Raytracer
 						for (unsigned k = 0; k < objects.size(); ++k) {
 		//					if (Intersect(objects[k], shadowRay)) {
 							float t0 = std::numeric_limits<float>::infinity();
-							if (objects[k].Intersect(shadowRay, &t0)) {
+							if ((*objects[k]).Intersect(shadowRay, &t0)) {
 								isInShadow = true;
 								break;
 							}
