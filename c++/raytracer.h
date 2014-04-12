@@ -13,6 +13,8 @@
 using std::cout; using std::endl;
 using std::vector;
 
+#define CollisionError 0.05
+
 class Raytracer
 {
 	private:
@@ -38,8 +40,8 @@ class Raytracer
 		}
 
 		void ConstructScene() {
-			lightPosition = Vec3(3.0,3.0,3.0);
-			Sphere *sphere = new Sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0));
+			lightPosition = Vec3(-3.0,3.0,3.0);
+			Sphere *sphere = new Sphere(Vec3(1.0,1.0,-1.0), 3.0, Vec3(0.5,0.0,0.0));
 			objects.push_back(sphere);
 			// objects.push_back(Sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0)));
 		}
@@ -76,7 +78,7 @@ class Raytracer
 					// compute primary ray direction
 					Ray primaryRay;
 					ComputePrimaryRay(i, j, &primaryRay);
-					cout << "primary ray point: " << primaryRay.Point() << " Direction: " << primaryRay.Direction() << endl;
+					// cout << "primary ray point: " << primaryRay.Point() << " Direction: " << primaryRay.Direction() << endl;
 					// shoot prim ray in the scene and search for intersection
 					Point pHit;
 					Normal nHit;
@@ -100,7 +102,8 @@ class Raytracer
 
 						// compute illumination
 						Ray shadowRay;
-						shadowRay.Direction() = lightPosition - pHit;
+						shadowRay.Point() = phit;
+						shadowRay.Direction() = lightPosition - phit/*(pHit + CollisionError * nhit)*/;
 						bool isInShadow = false;
 						for (unsigned k = 0; k < objects.size(); ++k) {
 		//					if (Intersect(objects[k], shadowRay)) {
@@ -110,11 +113,13 @@ class Raytracer
 								break;
 							}
 						}
-						// if (!isInShadow)
-			//				pixel.SetColor(object->color * light.brightness);
-			//			else
-			//				pixel.SetColor(Vec3(0.0));
+						if (!isInShadow)
+							pixel.SetColor(object->Color()/* * light.brightness*/);
+						else
+							pixel.SetColor(Vec3(0.0));
 					}
+					else
+						pixel.SetColor(Vec3(0.3));
 					image->Contribute(i, j, pixel);
 				}
 			}

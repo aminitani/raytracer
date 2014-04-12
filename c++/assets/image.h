@@ -18,10 +18,10 @@ public:
 	
 	void SetColor(Vec3 color)
 	{
-		r = color.x;
-		g = color.y;
-		b = color.z;
-		a = 1.0;
+		r = 255.0 * color.x;
+		g = 255.0 * color.y;
+		b = 255.0 * color.z;
+		a = 255;
 	}
 	
 	Pixel operator + (const Pixel &p) const { return Pixel(r + p.r, g + p.g, b + p.b, a + p.a); }
