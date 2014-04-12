@@ -4,9 +4,9 @@
 
 class Object {
 public:
-	Vec3 color;
+	Object(Vec3 c) : color(c) {}
 	virtual bool Intersect(Ray, float*) = 0;
 	virtual Vec3 Normal(Vec3) = 0;
 protected:
-	Object(Vec3 c) : color(c) {}
+	Vec3 color;
 };

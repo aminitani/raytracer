@@ -37,3 +37,6 @@ public:
 		return os;
 	}
 };
+
+typedef Vec3 Point;
+typedef Vec3 Normal;

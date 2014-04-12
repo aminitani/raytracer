@@ -13,9 +13,6 @@
 using std::cout; using std::endl;
 using std::vector;
 
-typedef Vec3 Point;
-typedef Vec3 Normal;
-
 class Raytracer
 {
 	private:
@@ -41,8 +38,10 @@ class Raytracer
 		}
 
 		void ConstructScene() {
-			lightPosition(3.0f,3.0f,3.0f);
-			objects.push_back(Sphere(Vec3(0.0f,0.0f,0.0f), 5f, Vec3(0.5f,0.0f,0.0f)));
+			lightPosition = Vec3(3.0,3.0,3.0);
+			Sphere sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0));
+			objects.push_back(sphere);
+			// objects.push_back(Sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0)));
 		}
 	
 	public:
@@ -64,10 +63,16 @@ class Raytracer
 		void Start()
 		{
 			//iterate from upper left to lower right through all pixels
-			for (unsigned i = 0; i < image->Height(); ++i)
+			for (unsigned i = 0; i < image->Width(); ++i)
 			{
-				for (unsigned j = 0; j < image->Width(); ++j)
+				for (unsigned j = 0; j < image->Height(); ++j)
 				{
+					//this is the color to be contributed to this pixel
+					Pixel pixel( (int)( (float)i/(float)image->Width()*255.0f ),
+						0,
+						(int)( (float)j/(float)image->Height()*255.0f ),
+						(int)( sqrt( (float)i/(float)image->Width()*(float)j/(float)image->Height() )*255.0f ) );
+						
 					// compute primary ray direction
 					Ray primaryRay;
 					ComputePrimaryRay(i, j, &primaryRay);
@@ -76,53 +81,56 @@ class Raytracer
 					Point pHit;
 					Normal nHit;
 					float minDist = std::numeric_limits<float>::infinity();
-					Object object = NULL;
-					for (int k = 0; k < objects.size(); ++k) {
+					Object *object = NULL;
+					for (unsigned k = 0; k < objects.size(); ++k) {
 		//				if (Intersect(objects[k], primRay, &pHit, &nHit)) {
-						if (objects[k].Intersect(primRay, &t0)) {
+						float t0 = std::numeric_limits<float>::infinity();
+						if (objects[k].Intersect(primaryRay, &t0)) {
 							// float distance = Vec3::Distance(eyePosition, pHit);
-							if (t0 < minDistance) {
-								object = objects[k];
-								minDistance = t0; // update min distance
+							if (t0 < minDist) {
+								(*object) = objects[k];
+								minDist = t0; // update min distance
 							}
 						}
 					}
 					if (object != NULL) {
 						// compute phit and nhit
-						Vec3 phit = primRay.Point() + primRay.Direction() * minDist; // point of intersection
-						Vec3 nhit = object.Normal(phit);
+						Vec3 phit = primaryRay.Point() + primaryRay.Direction() * minDist; // point of intersection
+						Vec3 nhit = object->Normal(phit);
 
 						// compute illumination
 						Ray shadowRay;
-						shadowRay.direction = lightPosition - pHit;
-						bool isShadow = false;
-						for (int k = 0; k < objects.size(); ++k) {
+						shadowRay.Direction() = lightPosition - pHit;
+						bool isInShadow = false;
+						for (unsigned k = 0; k < objects.size(); ++k) {
 		//					if (Intersect(objects[k], shadowRay)) {
-							if (objects[k].Intersect(shadowRay)) {
+							float t0 = std::numeric_limits<float>::infinity();
+							if (objects[k].Intersect(shadowRay, &t0)) {
 								isInShadow = true;
 								break;
 							}
 						}
+						// if (!isInShadow)
+			//				pixel.SetColor(object->color * light.brightness);
+			//			else
+			//				pixel.SetColor(Vec3(0.0));
 					}
-					// if (!isInShadow)
-		//				pixels[i][j] = object->color * light.brightness;
-		//			else
-		//				pixels[i][j] = 0;
+					image->Contribute(i, j, pixel);
 				}
 			}
 
 			//sample image generation
-			for(unsigned y = 0; y < image->Height(); y++)
-			{
-				for(unsigned x = 0; x < image->Width(); x++)
-				{
-					Pixel pixel( (int)( (float)x/(float)image->Width()*255.0f ),
-						0,
-						(int)( (float)y/(float)image->Height()*255.0f ),
-						(int)( sqrt( (float)x/(float)image->Width()*(float)y/(float)image->Height() )*255.0f ) );
-					image->Contribute(x, y, pixel);
-				}
-			}
+			// for(unsigned y = 0; y < image->Height(); y++)
+			// {
+				// for(unsigned x = 0; x < image->Width(); x++)
+				// {
+					// Pixel pixel( (int)( (float)x/(float)image->Width()*255.0f ),
+						// 0,
+						// (int)( (float)y/(float)image->Height()*255.0f ),
+						// (int)( sqrt( (float)x/(float)image->Width()*(float)y/(float)image->Height() )*255.0f ) );
+					// image->Contribute(x, y, pixel);
+				// }
+			// }
 			
 			image->Save();
 		}

@@ -5,9 +5,9 @@ public:
 	Vec3 center;
 	float radius;
 	float radius2;
-	Sphere(Vec3 c, float r, Vec3 _color) : center(c), Object(_color), radius(r), radius2(r*r) {}
+	Sphere(Vec3 c, float r, Vec3 _color) : Object(_color), center(c), radius(r), radius2(r*r) {}
 
-	virtual bool Intersect(Ray ray, float *t0 = NULL) const
+	virtual bool Intersect(Ray ray, float *t0 = NULL)
 	{
 		Vec3 l = center - ray.Point();
 		float tca = l.dot(ray.Direction());

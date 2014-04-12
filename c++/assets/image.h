@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 #include "../png/lodepng.h"
+#include "../math/vec3.h"
 
 using std::string;
 using std::vector;
@@ -14,6 +15,14 @@ public:
 	float r, g, b, a;
 	
 	Pixel(float rr, float gg, float bb, float aa) : r(rr), g(gg), b(bb), a(aa) {}
+	
+	void SetColor(Vec3 color)
+	{
+		r = color.x;
+		g = color.y;
+		b = color.z;
+		a = 1.0;
+	}
 	
 	Pixel operator + (const Pixel &p) const { return Pixel(r + p.r, g + p.g, b + p.b, a + p.a); }
 	Pixel operator * (const unsigned int &i) const { return Pixel(r * i, g * i, b * i, a * i); }
