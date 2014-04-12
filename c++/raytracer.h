@@ -21,7 +21,9 @@ class Raytracer
 		Image *image;
 		Camera *camera;
 		vector<Object *> objects;
+
 		Vec3 lightPosition;
+		float lightBrightness;
 		
 		void ComputePrimaryRay(unsigned x, unsigned y, Ray *primaryRay)
 		{
@@ -42,8 +44,8 @@ class Raytracer
 		void ConstructScene() {
 			lightPosition = Vec3(-3.0,3.0,3.0);
 			Sphere *sphere = new Sphere(Vec3(1.0,1.0,-1.0), 3.0, Vec3(0.5,0.0,0.0));
+			lightBrightness = 1.0;
 			objects.push_back(sphere);
-			// objects.push_back(Sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0)));
 		}
 	
 	public:
@@ -70,10 +72,7 @@ class Raytracer
 				for (unsigned j = 0; j < image->Height(); ++j)
 				{
 					//this is the color to be contributed to this pixel
-					Pixel pixel( (int)( (float)i/(float)image->Width()*255.0f ),
-						0,
-						(int)( (float)j/(float)image->Height()*255.0f ),
-						(int)( sqrt( (float)i/(float)image->Width()*(float)j/(float)image->Height() )*255.0f ) );
+					Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
 						
 					// compute primary ray direction
 					Ray primaryRay;
@@ -103,7 +102,7 @@ class Raytracer
 						// compute illumination
 						Ray shadowRay;
 						shadowRay.Point() = phit;
-						shadowRay.Direction() = lightPosition - phit/*(pHit + CollisionError * nhit)*/;
+						shadowRay.Direction() = (lightPosition - phit/*(pHit + CollisionError * nhit)*/).normalize();
 						bool isInShadow = false;
 						for (unsigned k = 0; k < objects.size(); ++k) {
 		//					if (Intersect(objects[k], shadowRay)) {
@@ -113,8 +112,9 @@ class Raytracer
 								break;
 							}
 						}
-						if (!isInShadow)
-							pixel.SetColor(object->Color()/* * light.brightness*/);
+						if (!isInShadow) {
+							pixel.SetColor(object->Color() * std::max(0.0f, nhit.dot(shadowRay.Direction())) * lightBrightness);
+						}
 						else
 							pixel.SetColor(Vec3(0.0));
 					}
@@ -123,19 +123,6 @@ class Raytracer
 					image->Contribute(i, j, pixel);
 				}
 			}
-
-			//sample image generation
-			// for(unsigned y = 0; y < image->Height(); y++)
-			// {
-				// for(unsigned x = 0; x < image->Width(); x++)
-				// {
-					// Pixel pixel( (int)( (float)x/(float)image->Width()*255.0f ),
-						// 0,
-						// (int)( (float)y/(float)image->Height()*255.0f ),
-						// (int)( sqrt( (float)x/(float)image->Width()*(float)y/(float)image->Height() )*255.0f ) );
-					// image->Contribute(x, y, pixel);
-				// }
-			// }
 			
 			image->Save();
 		}

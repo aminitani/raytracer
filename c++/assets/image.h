@@ -18,10 +18,18 @@ public:
 	
 	void SetColor(Vec3 color)
 	{
-		r = 255.0 * color.x;
-		g = 255.0 * color.y;
-		b = 255.0 * color.z;
-		a = 255;
+		r = color.x;
+		g = color.y;
+		b = color.z;
+		a = 1.0f;
+	}
+	
+	void SetColor(float rr, float gg, float bb, float aa)
+	{
+		r = rr;
+		g = gg;
+		b = bb;
+		a = aa;
 	}
 	
 	Pixel operator + (const Pixel &p) const { return Pixel(r + p.r, g + p.g, b + p.b, a + p.a); }
@@ -95,10 +103,10 @@ public:
 		for(unsigned y = 0; y < height; y++)
 		for(unsigned x = 0; x < width; x++)
 		{
-			image[4 * width * y + 4 * x + 0] = min(255u, (unsigned int)(*this)(x,y).GetPixel().r);
-			image[4 * width * y + 4 * x + 1] = min(255u, (unsigned int)(*this)(x,y).GetPixel().g);
-			image[4 * width * y + 4 * x + 2] = min(255u, (unsigned int)(*this)(x,y).GetPixel().b);
-			image[4 * width * y + 4 * x + 3] = min(255u, (unsigned int)(*this)(x,y).GetPixel().a);
+			image[4 * width * y + 4 * x + 0] = min(255u, (unsigned int)(255.*(*this)(x,y).GetPixel().r));
+			image[4 * width * y + 4 * x + 1] = min(255u, (unsigned int)(255.*(*this)(x,y).GetPixel().g));
+			image[4 * width * y + 4 * x + 2] = min(255u, (unsigned int)(255.*(*this)(x,y).GetPixel().b));
+			image[4 * width * y + 4 * x + 3] = min(255u, (unsigned int)(255.*(*this)(x,y).GetPixel().a));
 		}
 		
 		//Encode the image
