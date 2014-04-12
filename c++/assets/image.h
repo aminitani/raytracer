@@ -21,7 +21,7 @@ public:
 		r = color.x;
 		g = color.y;
 		b = color.z;
-		a = 1.0;
+		a = 255.0;
 	}
 	
 	Pixel operator + (const Pixel &p) const { return Pixel(r + p.r, g + p.g, b + p.b, a + p.a); }

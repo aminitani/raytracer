@@ -19,7 +19,9 @@ class Raytracer
 		Image *image;
 		Camera *camera;
 		vector<Object *> objects;
+
 		Vec3 lightPosition;
+		float lightBrightness;
 		
 		void ComputePrimaryRay(unsigned x, unsigned y, Ray *primaryRay)
 		{
@@ -39,15 +41,15 @@ class Raytracer
 
 		void ConstructScene() {
 			lightPosition = Vec3(3.0,3.0,3.0);
-			Sphere *sphere = new Sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0));
+			lightBrightness = 1.0;
+			Sphere *sphere = new Sphere(Vec3(0.0,0.0,-10.0), 5.0, Vec3(0.0,255.0,0.0));
 			objects.push_back(sphere);
-			// objects.push_back(Sphere(Vec3(0.0,0.0,0.0), 5.0, Vec3(0.5,0.0,0.0)));
 		}
 	
 	public:
 		Raytracer()
 		{
-			image = new Image(1280, 720, "test.png");
+			image = new Image(1920, 1080, "test.png");
 			//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
 			float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
 			camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, (float)image->Width()/(float)image->Height());
@@ -72,11 +74,12 @@ class Raytracer
 						0,
 						(int)( (float)j/(float)image->Height()*255.0f ),
 						(int)( sqrt( (float)i/(float)image->Width()*(float)j/(float)image->Height() )*255.0f ) );
+					// Pixel pixel(0.0f, 0.0f, 0.0f, 255.0f);
 						
 					// compute primary ray direction
 					Ray primaryRay;
 					ComputePrimaryRay(i, j, &primaryRay);
-					cout << "primary ray point: " << primaryRay.Point() << " Direction: " << primaryRay.Direction() << endl;
+					// cout << "primary ray point: " << primaryRay.Point() << " Direction: " << primaryRay.Direction() << endl;
 					// shoot prim ray in the scene and search for intersection
 					Point pHit;
 					Normal nHit;
@@ -100,7 +103,7 @@ class Raytracer
 
 						// compute illumination
 						Ray shadowRay;
-						shadowRay.Direction() = lightPosition - pHit;
+						shadowRay.Direction() = (lightPosition - pHit).normalize();
 						bool isInShadow = false;
 						for (unsigned k = 0; k < objects.size(); ++k) {
 		//					if (Intersect(objects[k], shadowRay)) {
@@ -110,10 +113,11 @@ class Raytracer
 								break;
 							}
 						}
-						// if (!isInShadow)
-			//				pixel.SetColor(object->color * light.brightness);
-			//			else
-			//				pixel.SetColor(Vec3(0.0));
+						if (!isInShadow) {
+							pixel.SetColor(object->color * std::max(0.0f, nhit.dot(shadowRay.Direction())) * lightBrightness);
+						}
+						else
+							pixel.SetColor(Vec3(0.0));
 					}
 					image->Contribute(i, j, pixel);
 				}
