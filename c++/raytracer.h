@@ -6,7 +6,6 @@
 #include <cmath>
 #include <limits>
 #include <chrono>
-#include "./RayMath.h"
 #include "./math/transform.h"
 #include "./assets/image.h"
 #include "./assets/camera.h"
