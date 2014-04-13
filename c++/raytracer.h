@@ -1,13 +1,18 @@
+//TODO: multiple additive lights
+//TODO: inverse square light falloff
+
 #include <iostream>
 #include <vector>
 #include <cmath>
 #include <limits>
+#include <chrono>
 #include "./RayMath.h"
 #include "./math/transform.h"
 #include "./assets/image.h"
 #include "./assets/camera.h"
 #include "./assets/sphere.h"
 #include "./assets/triangle.h"
+#include "./assets/light.h"
 #include "./math/ray.h"
 
 using std::cout; using std::endl;
@@ -21,9 +26,7 @@ class Raytracer
 		Image *image;
 		Camera *camera;
 		vector<Object *> objects;
-
-		Vec3 lightPosition;
-		float lightBrightness;
+		Light *light;
 		
 		void ComputePrimaryRay(unsigned x, unsigned y, Ray *primaryRay)
 		{
@@ -42,16 +45,15 @@ class Raytracer
 		}
 
 		void ConstructScene() {
-			lightPosition = Vec3(-3.0,3.0,3.0);
+			light = new Light(Vec3(-3.0,3.0,3.0), 0.8);
 			Sphere *sphere = new Sphere(Vec3(1.0,1.0,-1.0), 3.0, Vec3(0.5,0.0,0.0));
-			lightBrightness = 1.0;
 			objects.push_back(sphere);
 		}
 	
 	public:
 		Raytracer()
 		{
-			image = new Image(1280, 720, "test.png");
+			image = new Image(640, 480, "test.png");
 			//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
 			float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
 			camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, (float)image->Width()/(float)image->Height());
@@ -66,14 +68,18 @@ class Raytracer
 		
 		void Start()
 		{
+			//test
+			std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+			
+			//this is the color to be contributed to the pixels
+			Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
+			
 			//iterate from upper left to lower right through all pixels
 			for (unsigned i = 0; i < image->Width(); ++i)
 			{
 				for (unsigned j = 0; j < image->Height(); ++j)
 				{
-					//this is the color to be contributed to this pixel
-					Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
-						
+					
 					// compute primary ray direction
 					Ray primaryRay;
 					ComputePrimaryRay(i, j, &primaryRay);
@@ -102,7 +108,7 @@ class Raytracer
 						// compute illumination
 						Ray shadowRay;
 						shadowRay.Point() = phit;
-						shadowRay.Direction() = (lightPosition - phit/*(pHit + CollisionError * nhit)*/).normalize();
+						shadowRay.Direction() = (light->position - phit/*(pHit + CollisionError * nhit)*/).normalize();
 						bool isInShadow = false;
 						for (unsigned k = 0; k < objects.size(); ++k) {
 		//					if (Intersect(objects[k], shadowRay)) {
@@ -113,7 +119,7 @@ class Raytracer
 							}
 						}
 						if (!isInShadow) {
-							pixel.SetColor(object->Color() * std::max(0.0f, nhit.dot(shadowRay.Direction())) * lightBrightness);
+							pixel.SetColor(object->Color() * std::max(0.0f, nhit.dot(shadowRay.Direction())) * light->brightness);
 						}
 						else
 							pixel.SetColor(Vec3(0.0));
@@ -123,6 +129,10 @@ class Raytracer
 					image->Contribute(i, j, pixel);
 				}
 			}
+
+			//test
+			auto duration = std::chrono::high_resolution_clock::now() - start;
+			cout << "Time: " << (float)duration.count() / 1000000 << " milliseconds." << endl << endl;
 			
 			image->Save();
 		}
