@@ -25,7 +25,8 @@ class Raytracer
 		Image *image;
 		Camera *camera;
 		vector<Object *> objects;
-		Light *light;
+		// Light * light;
+		vector<Light *> lights;
 		
 		void ComputePrimaryRay(unsigned x, unsigned y, Ray *primaryRay)
 		{
@@ -44,9 +45,15 @@ class Raytracer
 		}
 
 		void ConstructScene() {
-			light = new Light(Vec3(-3.0,3.0,3.0), 0.8);
-			Sphere *sphere = new Sphere(Vec3(1.0,1.0,-1.0), 3.0, Vec3(0.5,0.0,0.0));
+			lights.push_back(new Light(Vec3(3.0,3.0,3.0), 0.8));
+			// light = new Light(Vec3(-3.0,3.0,3.0), 0.8);
+			Sphere *sphere = new Sphere(Vec3(0.0,0.0,-5.0), 3.0, Vec3(0.7,0.0,0.0));
 			objects.push_back(sphere);
+			objects.push_back(new Triangle(
+				Vec3(-2.0, 0.0, 1.0),
+				Vec3( 2.0, 0.0, 1.0),
+				Vec3( 0.0, 3.0, 1.0),
+				Vec3(0.0,0.7,0.0)));
 		}
 	
 	public:
@@ -103,25 +110,30 @@ class Raytracer
 						// compute phit and nhit
 						Vec3 phit = primaryRay.Point() + primaryRay.Direction() * minDist; // point of intersection
 						Vec3 nhit = object->Normal(phit);
+						Vec3 color(0);
 
 						// compute illumination
 						Ray shadowRay;
-						shadowRay.Point() = phit;
-						shadowRay.Direction() = (light->position - phit/*(pHit + CollisionError * nhit)*/).normalize();
-						bool isInShadow = false;
-						for (unsigned k = 0; k < objects.size(); ++k) {
-		//					if (Intersect(objects[k], shadowRay)) {
-							float t0 = std::numeric_limits<float>::infinity();
-							if ((*objects[k]).Intersect(shadowRay, &t0)) {
-								isInShadow = true;
-								break;
+						for(auto * light : lights) {
+							shadowRay.Point() = phit;
+							shadowRay.Direction() = (light->position - phit/*(pHit + CollisionError * nhit)*/).normalize();
+							bool isInShadow = false;
+							for (unsigned k = 0; k < objects.size(); ++k) {
+			//					if (Intersect(objects[k], shadowRay)) {
+								float t0 = std::numeric_limits<float>::infinity();
+								if(objects[k] != object)
+								if ((*objects[k]).Intersect(shadowRay, &t0)) {
+									isInShadow = true;
+									break;
+								}
 							}
+							if (!isInShadow) {
+								color += (object->Color() * std::max(0.0f, nhit.dot(shadowRay.Direction())) * light->brightness);
+							}
+							// else
+							// 	pixel.SetColor(Vec3(0.0));
 						}
-						if (!isInShadow) {
-							pixel.SetColor(object->Color() * std::max(0.0f, nhit.dot(shadowRay.Direction())) * light->brightness);
-						}
-						else
-							pixel.SetColor(Vec3(0.0));
+						pixel.SetColor(color);
 					}
 					else
 						pixel.SetColor(Vec3(0.3));
