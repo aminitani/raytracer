@@ -60,20 +60,20 @@ private:
 	int m_mode;
 	
 	CMesh m_fish;
-
+	
+	float *pixels;
 	Raytracer *raytracer;
+	Camera *camera;
 	
 	int m_width;
 	int m_height;
 
 	unsigned totThreads;
 
-	float *pixels;
-
 	bool readyToRender;
 	bool pendingRending;//if you ask to render while it's rendering, make note so we render again after finished (there may be no other stimulus to render since we ignore requests while rendering
 
-	Camera *camera;
+	CPoint mousePos;
 
 	//CDC *m_pDC;
 

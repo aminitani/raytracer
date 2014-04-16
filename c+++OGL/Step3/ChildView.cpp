@@ -48,6 +48,10 @@ CChildView::CChildView()
 	readyToRender = true;
 	pendingRending = false;
 
+	SetCursorPos(0, 0);
+
+	mousePos = CPoint(0, 0);
+
 	//m_pDC = NULL;
 }
 
@@ -144,9 +148,6 @@ void CChildView::OnFileSavebmpfile()
 void CChildView::OnLButtonDown(UINT nFlags, CPoint point)
 {
     //m_camera.MouseDown(point.x, point.y);
-	camera->orientation.Translate(raytracer->GetCamera()->orientation.Left() * -1);
-	thread thrd(&CChildView::Render, this, totThreads);
-	thrd.detach();
 
     COpenGLWnd ::OnLButtonDown(nFlags, point);
 }
@@ -154,6 +155,19 @@ void CChildView::OnLButtonDown(UINT nFlags, CPoint point)
 void CChildView::OnMouseMove(UINT nFlags, CPoint point)
 {
     //if(m_camera.MouseMove(point.x, point.y, nFlags))
+	
+	if(nFlags & MK_LBUTTON)
+	{
+		int wid, hit;
+		GetSize(wid, hit);
+
+		camera->orientation.Translate( camera->orientation.Left() * -1 * ( (point.x - mousePos.x) / (float)wid ) );
+		camera->orientation.Translate( camera->orientation.Up() * ( -1 * (point.y - mousePos.y) / (float)hit ) );
+		thread thrd(&CChildView::Render, this, totThreads);
+		thrd.detach();
+	}
+
+	mousePos = point;
 
     COpenGLWnd::OnMouseMove(nFlags, point);
 }
