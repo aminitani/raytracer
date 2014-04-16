@@ -24,7 +24,7 @@ class Raytracer
 {
 	private:
 		Image *image;
-		Camera *camera;
+		Camera *camera;//note that there are two cameras; childview's updates constantly, while this gets 'snapshots' every rendered frame
 		vector<Object *> objects;
 		Light *light;
 		float *pixels;//the pixel buffer shared between the childview and this raytracer
@@ -53,12 +53,12 @@ class Raytracer
 		}
 	
 	public:
-		Raytracer(int width, int height, float *inPixels)
+		Raytracer(int width, int height, float *inPixels, Camera inCamera)
 		{
 			image = new Image(width, height, "test.png");
-			//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
-			float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
-			camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, (float)width/(float)height/*(float)image->Width()/(float)image->Height()*/);
+			camera = new Camera(Transform(), 0, 0);
+			*camera = inCamera;
+
 			pixels = inPixels;
 			localPixels = new float[width*height*4];
 			ConstructScene();
@@ -152,8 +152,10 @@ class Raytracer
 			/*localP*/pixels[((image->Height()-1-j)*image->Width() + i)*4+3] = pixel.a;
 		}
 		
-		void Render(int numThreads)
+		void Render(int numThreads, Camera newCam)
 		{
+			*camera = newCam;
+
 			vector<thread> threads;
 			for(int i = 0; i < numThreads; i++)
 			{

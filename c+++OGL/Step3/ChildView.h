@@ -72,6 +72,8 @@ private:
 
 	bool readyToRender;
 
+	Camera *camera;
+
 	//CDC *m_pDC;
 
 	void Render(int numThreads);

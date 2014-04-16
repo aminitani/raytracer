@@ -24,6 +24,14 @@ class Camera
 			aRatio = inARatio;
 			vpd = 1;
 		}
+
+		Camera(const Camera &camera)
+		{
+			this->orientation = camera.orientation;
+			this->vpd = camera.vpd;
+			this->fovy = camera.fovy;
+			this->aRatio = camera.aRatio;
+		}
 		
 		float Fovy() {return fovy;}
 		float &ARatio() {return aRatio;}

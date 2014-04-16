@@ -39,7 +39,12 @@ CChildView::CChildView()
 	totThreads = std::thread::hardware_concurrency();
 	//totThreads = (std::thread::hardware_concurrency() > 1) ? std::thread::hardware_concurrency()-1 : 1;
 	pixels = new float[m_width*m_height*4];
-	raytracer = new Raytracer(m_width, m_height, pixels);
+	
+	//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
+	float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
+	camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, (float)m_width/(float)m_height);
+
+	raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
 
 	//m_pDC = NULL;
@@ -100,7 +105,7 @@ void CChildView::OnGLDraw(CDC *pDC)
 
 	//m_pDC = pDC;
 
-	Invalidate();
+	//Invalidate();
 }
 
 void CChildView::Render(int totThreads)
@@ -109,7 +114,7 @@ void CChildView::Render(int totThreads)
 	if(readyToRender)
 	{
 		readyToRender = false;
-		raytracer->Render(totThreads);
+		raytracer->Render(totThreads, *camera);
 		Invalidate();
 		//OnGLDraw(m_pDC);
 		//OnPaint(m_pDC);
@@ -146,7 +151,7 @@ void CChildView::OnMouseMove(UINT nFlags, CPoint point)
 void CChildView::OnRButtonDown(UINT nFlags, CPoint point)
 {
     //m_camera.MouseDown(point.x, point.y, 2);
-	raytracer->GetCamera()->orientation.Translate(raytracer->GetCamera()->orientation.Left() * -1);
+	camera->orientation.Translate(raytracer->GetCamera()->orientation.Left() * -1);
 	thread thrd(&CChildView::Render, this, totThreads);
 	thrd.detach();
 
