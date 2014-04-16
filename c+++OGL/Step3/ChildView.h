@@ -71,6 +71,7 @@ private:
 	float *pixels;
 
 	bool readyToRender;
+	bool pendingRending;//if you ask to render while it's rendering, make note so we render again after finished (there may be no other stimulus to render since we ignore requests while rendering
 
 	Camera *camera;
 

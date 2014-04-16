@@ -46,6 +46,7 @@ CChildView::CChildView()
 
 	raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
+	pendingRending = false;
 
 	//m_pDC = NULL;
 }
@@ -116,11 +117,18 @@ void CChildView::Render(int totThreads)
 		readyToRender = false;
 		raytracer->Render(totThreads, *camera);
 		Invalidate();
-		//OnGLDraw(m_pDC);
-		//OnPaint(m_pDC);
 		
 		readyToRender = true;
+
+		if(pendingRending)
+		{
+			thread thrd(&CChildView::Render, this, totThreads);
+			thrd.detach();
+			pendingRending = false;
+		}
 	}
+	else
+		pendingRending = true;
 }
 
 double Normal3dv(double *v)
@@ -136,6 +144,9 @@ void CChildView::OnFileSavebmpfile()
 void CChildView::OnLButtonDown(UINT nFlags, CPoint point)
 {
     //m_camera.MouseDown(point.x, point.y);
+	camera->orientation.Translate(raytracer->GetCamera()->orientation.Left() * -1);
+	thread thrd(&CChildView::Render, this, totThreads);
+	thrd.detach();
 
     COpenGLWnd ::OnLButtonDown(nFlags, point);
 }
@@ -143,7 +154,6 @@ void CChildView::OnLButtonDown(UINT nFlags, CPoint point)
 void CChildView::OnMouseMove(UINT nFlags, CPoint point)
 {
     //if(m_camera.MouseMove(point.x, point.y, nFlags))
-    //    Invalidate();
 
     COpenGLWnd::OnMouseMove(nFlags, point);
 }
@@ -151,9 +161,6 @@ void CChildView::OnMouseMove(UINT nFlags, CPoint point)
 void CChildView::OnRButtonDown(UINT nFlags, CPoint point)
 {
     //m_camera.MouseDown(point.x, point.y, 2);
-	camera->orientation.Translate(raytracer->GetCamera()->orientation.Left() * -1);
-	thread thrd(&CChildView::Render, this, totThreads);
-	thrd.detach();
 
     COpenGLWnd::OnRButtonDown(nFlags, point);
 }
@@ -161,7 +168,6 @@ void CChildView::OnRButtonDown(UINT nFlags, CPoint point)
 BOOL CChildView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
     //m_camera.MouseWheel(zDelta);
-    Invalidate();
 
     return COpenGLWnd::OnMouseWheel(nFlags, zDelta, pt);
 }
@@ -171,8 +177,6 @@ void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 	//switch(nChar)
 	//{
 	//case 0x44:
-	//	raytracer->GetCamera()->orientation.Translate(raytracer->GetCamera()->orientation.Left() * -1);
-	//	//renderstuff
 	//	break;
 	//}
 
