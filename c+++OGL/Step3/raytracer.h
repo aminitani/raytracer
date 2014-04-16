@@ -20,9 +20,13 @@ using std::thread;
 
 #define CollisionError 0.05
 
+extern "C" void
+test();
+
 class Raytracer
 {
 	private:
+		float INFINITY;
 		Image *image;
 		Camera *camera;//note that there are two cameras; childview's updates constantly, while this gets 'snapshots' every rendered frame
 		vector<Object *> objects;
@@ -55,6 +59,7 @@ class Raytracer
 	public:
 		Raytracer(int width, int height, float *inPixels, Camera inCamera)
 		{
+			INFINITY = std::numeric_limits<float>::infinity();
 			image = new Image(width, height, "test.png");
 			camera = new Camera(Transform(), 0, 0);
 			*camera = inCamera;
@@ -80,6 +85,12 @@ class Raytracer
 			
 			delete light;
 			light = NULL;
+
+			delete [] localPixels;
+			localPixels = NULL;
+			
+			//don't delete pixels; childview's job
+			pixels = NULL;
 		}
 
 		Camera *GetCamera() {return camera;}
@@ -102,11 +113,9 @@ class Raytracer
 			// compute primary ray direction
 			Ray primaryRay;
 			ComputePrimaryRay(i, j, image->Width(), image->Height(), &primaryRay);
-			// cout << "primary ray point: " << primaryRay.Point() << " Direction: " << primaryRay.Direction() << endl;
-			// shoot prim ray in the scene and search for intersection
 			Point pHit;
 			Normal nHit;
-			float minDist = std::numeric_limits<float>::infinity();
+			float minDist = INFINITY;
 			Object *object = NULL;
 			for (unsigned k = 0; k < objects.size(); ++k) {
 //				if (Intersect(objects[k], primRay, &pHit, &nHit)) {
@@ -131,7 +140,7 @@ class Raytracer
 				bool isInShadow = false;
 				for (unsigned k = 0; k < objects.size(); ++k) {
 //					if (Intersect(objects[k], shadowRay)) {
-					float t0 = std::numeric_limits<float>::infinity();
+					float t0 = INFINITY;
 					if ((*objects[k]).Intersect(shadowRay, &t0)) {
 						isInShadow = true;
 						break;
@@ -146,14 +155,16 @@ class Raytracer
 			else
 				pixel.SetColor(Vec3(0.3f));
 
-			/*localP*/pixels[((image->Height()-1-j)*image->Width() + i)*4+0] = pixel.r;
-			/*localP*/pixels[((image->Height()-1-j)*image->Width() + i)*4+1] = pixel.g;
-			/*localP*/pixels[((image->Height()-1-j)*image->Width() + i)*4+2] = pixel.b;
-			/*localP*/pixels[((image->Height()-1-j)*image->Width() + i)*4+3] = pixel.a;
+			localPixels[((image->Height()-1-j)*image->Width() + i)*4+0] = pixel.r;
+			localPixels[((image->Height()-1-j)*image->Width() + i)*4+1] = pixel.g;
+			localPixels[((image->Height()-1-j)*image->Width() + i)*4+2] = pixel.b;
+			localPixels[((image->Height()-1-j)*image->Width() + i)*4+3] = pixel.a;
 		}
 		
 		void Render(int numThreads, Camera newCam)
 		{
+			test();
+
 			*camera = newCam;
 
 			vector<thread> threads;
@@ -170,7 +181,7 @@ class Raytracer
 			for(auto &thread : threads)
 				thread.join();
 
-			//for(int i = 0; i < image->Width()*image->Height()*4; i++)
-			//	pixels[i] = localPixels[i];
+			for(int i = 0; i < image->Width()*image->Height()*4; i++)
+				pixels[i] = localPixels[i];
 		}
 };

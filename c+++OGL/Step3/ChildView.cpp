@@ -57,6 +57,10 @@ CChildView::CChildView()
 
 CChildView::~CChildView()
 {
+	delete camera;
+	camera = NULL;
+	delete [] pixels;
+	pixels = NULL;
 	delete raytracer;
 	raytracer = NULL;
 }
@@ -161,8 +165,8 @@ void CChildView::OnMouseMove(UINT nFlags, CPoint point)
 		int wid, hit;
 		GetSize(wid, hit);
 
-		camera->orientation.Translate( camera->orientation.Left() * -1 * ( (point.x - mousePos.x) / (float)wid ) );
-		camera->orientation.Translate( camera->orientation.Up() * ( -1 * (point.y - mousePos.y) / (float)hit ) );
+		camera->orientation.Translate( camera->orientation.Left() * ( (point.x - mousePos.x) / (float)wid ) );
+		camera->orientation.Translate( camera->orientation.Up() * ( (point.y - mousePos.y) / (float)hit ) );
 		thread thrd(&CChildView::Render, this, totThreads);
 		thrd.detach();
 	}

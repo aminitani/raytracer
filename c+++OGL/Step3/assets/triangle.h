@@ -9,7 +9,7 @@ public:
 		vert[2] = v3;
 	}
 
-	virtual bool Intersect(Ray ray, float* t0) {
+	virtual bool Intersect(Ray &ray, float* t0) {
 		Vec3 tvec = ray.Point() - vert[0];  
 		Vec3 pvec = ray.Direction().cross(vert[2]);  
 		float  det  = vert[1].dot(pvec);
