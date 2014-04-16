@@ -20,6 +20,9 @@ using std::thread;
 
 #define CollisionError 0.05
 
+extern "C" void
+test();
+
 class Raytracer
 {
 	private:
@@ -160,6 +163,8 @@ class Raytracer
 		
 		void Render(int numThreads, Camera newCam)
 		{
+			test();
+
 			*camera = newCam;
 
 			vector<thread> threads;

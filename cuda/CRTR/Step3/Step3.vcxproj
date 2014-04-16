@@ -204,6 +204,9 @@
     <ClInclude Include="StdAfx.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="raytracer.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </CudaCompile>
     <None Include="res\lab.ico" />
     <None Include="res\lab.rc2" />
     <None Include="res\Toolbar.bmp" />
