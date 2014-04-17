@@ -21,7 +21,7 @@ using std::thread;
 /////////////////////////////////////////////////////////////////////////////
 // CChildView
 
-CChildView::CChildView()
+CChildView::CChildView(int width, int height)
 {
     SetDoubleBuffer(true);
 
@@ -33,8 +33,8 @@ CChildView::CChildView()
 	
 	m_fish.LoadOBJ("models\\fish4.obj");
 
-	m_width = 680;
-	m_height = 480;
+	m_width = width;
+	m_height = height;
 	totThreads = std::thread::hardware_concurrency();
 	//totThreads = (std::thread::hardware_concurrency() > 1) ? std::thread::hardware_concurrency()-1 : 1;
 	pixels = new float[m_width*m_height*4];
@@ -99,21 +99,48 @@ BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs)
 
 void CChildView::OnGLDraw(CDC *pDC)
 {
+    int wid, hit;
+    GetSize(wid, hit);
+
+	//SetWindowPos(NULL, (wid > m_width) ? (wid-m_width)/2 : 0, (hit > m_height) ? (hit-m_height)/2 : 0, m_width, m_height, SWP_SHOWWINDOW);
+	//SetWindowPos(&wndTop, 550, 218, m_width, m_height, SWP_SHOWWINDOW);
+	
 	//GLfloat gray = 0.7f;
     //glClearColor(gray, gray, gray, 0.0f);
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    int wid, hit;
-    GetSize(wid, hit);
+	glEnable(GL_TEXTURE_2D);
 
+	//glDrawPixels(m_width, m_height, GL_RGBA, GL_FLOAT, pixels);
+
+	glBindTexture(GL_TEXTURE_2D, 1);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_FLOAT, pixels);
+
+	glClearColor(1,1,1,1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glDrawPixels(m_width, m_height, GL_RGBA, GL_FLOAT, pixels);
 
-    glFlush();
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 
-	//m_pDC = pDC;
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
-	//Invalidate();
+	//glViewport(0, 0, 
+
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, 0.5);
+	glTexCoord2f(1.0, 0.0); glVertex3f(1.0, -1.0, 0.5);
+	glTexCoord2f(1.0, 1.0); glVertex3f(1.0, 1.0, 0.5);
+	glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, 1.0, 0.5);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+
+    //glFlush();
 }
 
 void CChildView::Render(int totThreads)

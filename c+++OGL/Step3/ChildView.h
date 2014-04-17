@@ -39,6 +39,7 @@ public:
 // Implementation
 public:
 	void OnGLDraw(CDC *pDC);
+	CChildView(int width, int height);
 	virtual ~CChildView();
 
 	// Generated message map functions
