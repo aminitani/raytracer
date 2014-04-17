@@ -21,7 +21,7 @@ using std::thread;
 /////////////////////////////////////////////////////////////////////////////
 // CChildView
 
-CChildView::CChildView()
+CChildView::CChildView(int width, int height)
 {
     SetDoubleBuffer(true);
 
@@ -33,8 +33,8 @@ CChildView::CChildView()
 	
 	m_fish.LoadOBJ("models\\fish4.obj");
 
-	m_width = 320;
-	m_height = 240;
+	m_width = width;
+	m_height = height;
 	totThreads = std::thread::hardware_concurrency();
 	//totThreads = (std::thread::hardware_concurrency() > 1) ? std::thread::hardware_concurrency()-1 : 1;
 	pixels = new float[m_width*m_height*4];
@@ -99,12 +99,15 @@ BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs)
 
 void CChildView::OnGLDraw(CDC *pDC)
 {
+    int wid, hit;
+    GetSize(wid, hit);
+
+	//SetWindowPos(NULL, (wid > m_width) ? (wid-m_width)/2 : 0, (hit > m_height) ? (hit-m_height)/2 : 0, m_width, m_height, SWP_SHOWWINDOW);
+	//SetWindowPos(&wndTop, 550, 218, m_width, m_height, SWP_SHOWWINDOW);
+	
 	//GLfloat gray = 0.7f;
     //glClearColor(gray, gray, gray, 0.0f);
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    int wid, hit;
-    GetSize(wid, hit);
 
 	glEnable(GL_TEXTURE_2D);
 
@@ -138,10 +141,6 @@ void CChildView::OnGLDraw(CDC *pDC)
 	glDisable(GL_TEXTURE_2D);
 
     //glFlush();
-
-	//m_pDC = pDC;
-
-	//Invalidate();
 }
 
 void CChildView::Render(int totThreads)

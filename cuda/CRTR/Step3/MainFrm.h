@@ -42,8 +42,11 @@ public:
 
 protected:  // control bar embedded members
 	CStatusBar  m_wndStatusBar;
-	CToolBar    m_wndToolBar;
-	CChildView    m_wndView;
+	//CToolBar    m_wndToolBar;
+	CChildView    *m_wndView;
+	
+	int m_width;
+	int m_height;
 
 // Generated message map functions
 protected:
