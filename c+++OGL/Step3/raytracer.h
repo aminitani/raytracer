@@ -26,6 +26,15 @@ test();
 
 struct ViewPlane
 {
+	ViewPlane(Camera *camera)
+	{
+		//these are half the viewplane dimensions
+		//TODO: tan is a bad function. works for most reasonable values though.
+		vert = (float) tan(camera->Fovy() / 2.0) * camera->VPD();
+		hor = vert * camera->ARatio();
+		VPCenter = camera->orientation.Pos() + ( camera->orientation.Forward() * camera->VPD() );
+		ULCorner = VPCenter + camera->orientation.Left() * hor + camera->orientation.Up() * vert;
+	}
 	float vert, hor;
 	Point VPCenter, ULCorner;
 };
@@ -178,13 +187,7 @@ class Raytracer
 			test();
 
 			*camera = newCam;
-			ViewPlane vp;
-			//these are half the viewplane dimensions
-			//TODO: tan is a bad function. works for most reasonable values though.
-			vp.vert = (float) tan(camera->Fovy() / 2.0) * camera->VPD();
-			vp.hor = vp.vert * camera->ARatio();
-			vp.VPCenter = camera->orientation.Pos() + ( camera->orientation.Forward() * camera->VPD() );
-			vp.ULCorner = vp.VPCenter + camera->orientation.Left() * vp.hor + camera->orientation.Up() * vp.vert;
+			ViewPlane vp(camera);
 
 			start = std::chrono::high_resolution_clock::now();
 			
