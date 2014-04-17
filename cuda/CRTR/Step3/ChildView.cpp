@@ -6,7 +6,6 @@
 #include "ChildView.h"
 #include <cmath>
 #include <thread>
-#include <chrono>
 
 #include <Windows.h>
 #include <iostream>

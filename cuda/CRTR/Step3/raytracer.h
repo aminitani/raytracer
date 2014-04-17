@@ -6,6 +6,7 @@
 #include <cmath>
 #include <limits>
 #include <thread>
+#include <chrono>
 #include "./math/transform.h"
 #include "./assets/image.h"
 #include "./assets/camera.h"
@@ -23,6 +24,12 @@ using std::thread;
 extern "C" void
 test();
 
+struct ViewPlane
+{
+	float vert, hor;
+	Point VPCenter, ULCorner;
+};
+
 class Raytracer
 {
 	private:
@@ -33,20 +40,20 @@ class Raytracer
 		Light *light;
 		float *pixels;//the pixel buffer shared between the childview and this raytracer
 		float *localPixels;//write to this, then push into pixels when the whole image is done
+
+		Vec3 defaultColor;
+		Vec3 BLACK;
+
+		std::chrono::high_resolution_clock::time_point start;
+		std::chrono::high_resolution_clock::time_point iterationDone;
+		std::chrono::high_resolution_clock::time_point bufferCopied;
 		
-		void ComputePrimaryRay(unsigned x, unsigned y, unsigned width, unsigned height, Ray *primaryRay)
+		void ComputePrimaryRay(unsigned x, unsigned y, unsigned width, unsigned height, Ray *primaryRay, ViewPlane &vp)
 		{
 			primaryRay->Point() = camera->orientation.Pos();
-			//these are half the viewplane dimensions
-			//TODO: tan is a bad function. works for most reasonable values though.
-			float vert = (float) tan(camera->Fovy() / 2.0) * camera->VPD();
-			float hor = vert * camera->ARatio();
-			Point VPCenter = camera->orientation.Pos() + ( camera->orientation.Forward() * camera->VPD() );
-			Point ULCorner = VPCenter + camera->orientation.Left() * hor + camera->orientation.Up() * vert;
-			// cout << "cameye: " << camera->orientation.Pos() << " VPC: " << VPCenter << " ULC: " << ULCorner << endl;
 			Point target =
-			ULCorner - camera->orientation.Left() * ( ((x+.5) / width) * 2*hor )
-			- camera->orientation.Up() * ( ((y+.5) / height) * 2*vert );
+			vp.ULCorner - camera->orientation.Left() * ( ((x+.5) / width) * 2*vp.hor )
+			- camera->orientation.Up() * ( ((y+.5) / height) * 2*vp.vert );
 			primaryRay->Direction() = (target - camera->orientation.Pos()).normalize();
 		}
 
@@ -67,6 +74,9 @@ class Raytracer
 			pixels = inPixels;
 			localPixels = new float[width*height*4];
 			ConstructScene();
+
+			defaultColor = Vec3(0.3);
+			BLACK = Vec3(0.0);
 		}
 		
 		~Raytracer()
@@ -95,31 +105,33 @@ class Raytracer
 
 		Camera *GetCamera() {return camera;}
 
-		void Thrender(unsigned start, unsigned end)
+		void Thrender(unsigned start, unsigned end, ViewPlane &vp)
 		{
+			Point pHit;
+			Normal nHit;
+			//this is the color to be contributed to the pixels
+			Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
+			Ray primaryRay;
+			float minDist;
+
 			for (unsigned i = start; i < end; ++i)
 			{
 				for (unsigned j = 0; j < image->Height(); ++j)
 				{
-					Trace(i, j);
+					Trace(i, j, pHit, nHit, pixel, primaryRay, minDist, vp);
 				}
 			}
 		}
 
-		void Trace(int i, int j)
+		void Trace(const int &i, const int &j, Point &pHit, Normal &nHit, Pixel &pixel, Ray &primaryRay, float &minDist, ViewPlane &vp)
 		{
-			//this is the color to be contributed to the pixels
-			Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
 			// compute primary ray direction
-			Ray primaryRay;
-			ComputePrimaryRay(i, j, image->Width(), image->Height(), &primaryRay);
-			Point pHit;
-			Normal nHit;
-			float minDist = INFINITY;
+			ComputePrimaryRay(i, j, image->Width(), image->Height(), &primaryRay, vp);
+			minDist = INFINITY;
 			Object *object = NULL;
 			for (unsigned k = 0; k < objects.size(); ++k) {
 //				if (Intersect(objects[k], primRay, &pHit, &nHit)) {
-				float t0 = std::numeric_limits<float>::infinity();
+				float t0 = INFINITY;
 				if ((*objects[k]).Intersect(primaryRay, &t0)) {
 					// float distance = Vec3::Distance(eyePosition, pHit);
 					if (t0 < minDist) {
@@ -130,13 +142,13 @@ class Raytracer
 			}
 			if (object != NULL) {
 				// compute phit and nhit
-				Vec3 phit = primaryRay.Point() + primaryRay.Direction() * minDist; // point of intersection
-				Vec3 nhit = object->Normal(phit);
+				pHit = primaryRay.Point() + primaryRay.Direction() * minDist; // point of intersection
+				nHit = object->Normal(pHit);
 
 				// compute illumination
 				Ray shadowRay;
-				shadowRay.Point() = phit;
-				shadowRay.Direction() = (light->position - phit/*(pHit + CollisionError * nhit)*/).normalize();
+				shadowRay.Point() = pHit;
+				shadowRay.Direction() = (light->position - pHit/*(pHit + CollisionError * nhit)*/).normalize();
 				bool isInShadow = false;
 				for (unsigned k = 0; k < objects.size(); ++k) {
 //					if (Intersect(objects[k], shadowRay)) {
@@ -147,18 +159,18 @@ class Raytracer
 					}
 				}
 				if (!isInShadow) {
-					pixel.SetColor(object->Color() * max(0.0f, nhit.dot(shadowRay.Direction())) * light->brightness);
+					pixel.SetColor(object->Color() * max(0.0f, nHit.dot(shadowRay.Direction())) * light->brightness);
 				}
 				else
-					pixel.SetColor(Vec3(0.0));
+					pixel.SetColor(BLACK);
 			}
 			else
-				pixel.SetColor(Vec3(0.3f));
+				pixel.SetColor(defaultColor);
 
-			localPixels[((image->Height()-1-j)*image->Width() + i)*4+0] = pixel.r;
-			localPixels[((image->Height()-1-j)*image->Width() + i)*4+1] = pixel.g;
-			localPixels[((image->Height()-1-j)*image->Width() + i)*4+2] = pixel.b;
-			localPixels[((image->Height()-1-j)*image->Width() + i)*4+3] = pixel.a;
+			pixels[((image->Height()-1-j)*image->Width() + i)*4+0] = pixel.r;
+			pixels[((image->Height()-1-j)*image->Width() + i)*4+1] = pixel.g;
+			pixels[((image->Height()-1-j)*image->Width() + i)*4+2] = pixel.b;
+			pixels[((image->Height()-1-j)*image->Width() + i)*4+3] = pixel.a;
 		}
 		
 		void Render(int numThreads, Camera newCam)
@@ -166,7 +178,16 @@ class Raytracer
 			test();
 
 			*camera = newCam;
+			ViewPlane vp;
+			//these are half the viewplane dimensions
+			//TODO: tan is a bad function. works for most reasonable values though.
+			vp.vert = (float) tan(camera->Fovy() / 2.0) * camera->VPD();
+			vp.hor = vp.vert * camera->ARatio();
+			vp.VPCenter = camera->orientation.Pos() + ( camera->orientation.Forward() * camera->VPD() );
+			vp.ULCorner = vp.VPCenter + camera->orientation.Left() * vp.hor + camera->orientation.Up() * vp.vert;
 
+			start = std::chrono::high_resolution_clock::now();
+			
 			vector<thread> threads;
 			for(int i = 0; i < numThreads; i++)
 			{
@@ -176,12 +197,20 @@ class Raytracer
 					end = image->Width();
 				else
 					end = start + image->Width() / numThreads;
-				threads.push_back(thread(&Raytracer::Thrender, this, start, end));
+				threads.push_back(thread(&Raytracer::Thrender, this, start, end, vp));
 			}
 			for(auto &thread : threads)
 				thread.join();
+			
+			iterationDone = std::chrono::high_resolution_clock::now();
+			
+			//for(int i = 0; i < image->Width()*image->Height()*4; i++)
+			//	pixels[i] = localPixels[i];
 
-			for(int i = 0; i < image->Width()*image->Height()*4; i++)
-				pixels[i] = localPixels[i];
+			bufferCopied = std::chrono::high_resolution_clock::now();
+			
+			unsigned long long traceTime = (float)(iterationDone - start).count() / 1000;
+			unsigned long long copyTime = (float)(bufferCopied - iterationDone).count() / 1000;
+			int x = 0;
 		}
 };
