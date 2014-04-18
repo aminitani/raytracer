@@ -55,7 +55,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	// create a view to occupy the client area of the frame
 	if (!m_wndView->Create(NULL, NULL, AFX_WS_DEFAULT_VIEW,
-		CRect(0, 0, 0, 0), this, AFX_IDW_PANE_FIRST, NULL))
+		CRect(0, 0, 640, 480), this, AFX_IDW_PANE_FIRST, NULL))
 	{
 		TRACE0("Failed to create view window\n");
 		return -1;
@@ -102,7 +102,8 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 	cs.style &= (0xFFFFFFFF ^ WS_MAXIMIZEBOX);
 	//cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
 
-
+	//no work
+	//AdjustWindowRectEx(CRect(0, 0, m_width, m_height), cs.dwExStyle, false, cs.dwExStyle);
 
 	cs.lpszClass = AfxRegisterWndClass(0);
 	return TRUE;
@@ -128,7 +129,13 @@ void CMainFrame::Dump(CDumpContext& dc) const
 // CMainFrame message handlers
 void CMainFrame::OnSetFocus(CWnd* pOldWnd)
 {
-	SetWindowPos(&wndTop, 0, 0, m_width, m_height, SWP_SHOWWINDOW);
+	RECT rcClient, rcWind;
+	POINT ptDiff;
+	GetClientRect(&rcClient);
+	GetWindowRect(&rcWind);
+	ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
+	ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
+	SetWindowPos(&wndTop, 100, 100, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
 	// forward focus to the view window
 	m_wndView->SetFocus();
 }
