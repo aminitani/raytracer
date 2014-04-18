@@ -20,7 +20,12 @@ static char THIS_FILE[] = __FILE__;
 
 using std::thread;
 
-extern "C" void renderTest(float*,int,int);
+extern "C"
+{
+void test();
+void CUDAThrender(float4 camInfo);
+void renderTest(float*,int,int);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // CChildView
@@ -160,7 +165,9 @@ void CChildView::Render(int totThreads)
 	{
 		readyToRender = false;
 		//unsigned long long youShouldHaveJustShownMeTheValue = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-		renderTest(devPtr, m_width, m_height);
+		//renderTest(devPtr, m_width, m_height);
+		float4 camInfo = {0.0, 0.0, 0.0, 0.0};
+		CUDAThrender(camInfo);
 		//cudaDeviceSynchronize();
 		//raytracer->Render(totThreads, *camera);
 		Invalidate();
