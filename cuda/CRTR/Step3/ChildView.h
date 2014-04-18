@@ -62,6 +62,7 @@ private:
 	
 	CMesh m_fish;
 	
+	float *devPtr;
 	float *pixels;
 	Raytracer *raytracer;
 	Camera *camera;

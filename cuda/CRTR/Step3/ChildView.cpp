@@ -9,6 +9,8 @@
 
 #include <Windows.h>
 #include <iostream>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -17,6 +19,8 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 using std::thread;
+
+extern "C" void renderTest(float*,int,int);
 
 /////////////////////////////////////////////////////////////////////////////
 // CChildView
@@ -51,11 +55,14 @@ CChildView::CChildView(int width, int height)
 
 	mousePos = CPoint(0, 0);
 
+	cudaMalloc((void**)&devPtr, m_width * m_height * sizeof(float) * 4);
+
 	//m_pDC = NULL;
 }
 
 CChildView::~CChildView()
 {
+	cudaFree((void**)&devPtr);
 	delete camera;
 	camera = NULL;
 	delete [] pixels;
@@ -114,11 +121,11 @@ void CChildView::OnGLDraw(CDC *pDC)
 
 	glEnable(GL_TEXTURE_2D);
 
-	//glDrawPixels(m_width, m_height, GL_RGBA, GL_FLOAT, pixels);
-
 	glBindTexture(GL_TEXTURE_2D, 1);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//rendertest wuz here
+	cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_FLOAT, pixels);
 
 	glClearColor(0.5, 0.5, 0.5, 1.0);
@@ -152,7 +159,10 @@ void CChildView::Render(int totThreads)
 	if(readyToRender)
 	{
 		readyToRender = false;
-		raytracer->Render(totThreads, *camera);
+		//unsigned long long youShouldHaveJustShownMeTheValue = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+		renderTest(devPtr, m_width, m_height);
+		//cudaDeviceSynchronize();
+		//raytracer->Render(totThreads, *camera);
 		Invalidate();
 		
 		readyToRender = true;
