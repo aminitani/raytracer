@@ -101,6 +101,9 @@ void CChildView::OnGLDraw(CDC *pDC)
 {
     int wid, hit;
     GetSize(wid, hit);
+	
+	float px = (float)m_width / wid;
+	float py = (float)m_height / hit;
 
 	//SetWindowPos(NULL, (wid > m_width) ? (wid-m_width)/2 : 0, (hit > m_height) ? (hit-m_height)/2 : 0, m_width, m_height, SWP_SHOWWINDOW);
 	//SetWindowPos(&wndTop, 550, 218, m_width, m_height, SWP_SHOWWINDOW);
@@ -118,7 +121,7 @@ void CChildView::OnGLDraw(CDC *pDC)
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_FLOAT, pixels);
 
-	glClearColor(1,1,1,1);
+	glClearColor(0.5, 0.5, 0.5, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glMatrixMode(GL_PROJECTION);
@@ -132,10 +135,10 @@ void CChildView::OnGLDraw(CDC *pDC)
 	//glViewport(0, 0, 
 
 	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, 0.5);
-	glTexCoord2f(1.0, 0.0); glVertex3f(1.0, -1.0, 0.5);
-	glTexCoord2f(1.0, 1.0); glVertex3f(1.0, 1.0, 0.5);
-	glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, 1.0, 0.5);
+	glTexCoord2f(0.0, 0.0); glVertex3f(-px, -py, 0.5);
+	glTexCoord2f(1.0, 0.0); glVertex3f(px, -py, 0.5);
+	glTexCoord2f(1.0, 1.0); glVertex3f(px, py, 0.5);
+	glTexCoord2f(0.0, 1.0); glVertex3f(-px, py, 0.5);
 	glEnd();
 
 	glDisable(GL_TEXTURE_2D);

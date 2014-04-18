@@ -95,12 +95,12 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 
 
 
-	cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
- 
-	cs.style &= (0xFFFFFFFF ^ WS_SIZEBOX);
-	cs.style |= WS_BORDER;
-	cs.style &= (0xFFFFFFFF ^ WS_MAXIMIZEBOX);
 	//cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
+	//
+	//cs.style &= (0xFFFFFFFF ^ WS_SIZEBOX);
+	//cs.style |= WS_BORDER;
+	//cs.style &= (0xFFFFFFFF ^ WS_MAXIMIZEBOX);
+	cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
 
 	//no work
 	//AdjustWindowRectEx(CRect(0, 0, m_width, m_height), cs.dwExStyle, false, cs.dwExStyle);
@@ -129,13 +129,41 @@ void CMainFrame::Dump(CDumpContext& dc) const
 // CMainFrame message handlers
 void CMainFrame::OnSetFocus(CWnd* pOldWnd)
 {
-	RECT rcClient, rcWind;
-	POINT ptDiff;
-	GetClientRect(&rcClient);
-	GetWindowRect(&rcWind);
-	ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
-	ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
-	SetWindowPos(&wndTop, 100, 100, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
+	//RECT rcClient, rcWind;
+	//POINT ptDiff;
+	//GetClientRect(&rcClient);
+	//GetWindowRect(&rcWind);
+	//ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
+	//ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
+	//SetWindowPos(&wndTop, 0, 0, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
+
+	
+	//
+	//GetClientRect(&rcClient);
+	//GetWindowRect(&rcWind);
+	//ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
+	//ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
+	//SetWindowPos(&wndTop, 0, 0, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
+	//
+	//GetClientRect(&rcClient);
+	//GetWindowRect(&rcWind);
+	//ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
+	//ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
+	//SetWindowPos(&wndTop, 0, 0, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
+	//
+	//GetClientRect(&rcClient);
+	//GetWindowRect(&rcWind);
+	//ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
+	//ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
+	//SetWindowPos(&wndTop, 0, 0, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
+
+
+	
+	//CRect temp(100, 100, m_width, m_height);
+	//AdjustWindowRectEx(&temp, this->GetStyle(), true, this->GetExStyle());
+	//SetWindowPos(&wndTop, temp.left, temp.top, temp.right, temp.bottom, SWP_SHOWWINDOW);
+
+
 	// forward focus to the view window
 	m_wndView->SetFocus();
 }
