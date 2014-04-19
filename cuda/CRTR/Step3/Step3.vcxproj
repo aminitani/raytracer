@@ -201,6 +201,7 @@
     <ClInclude Include="png\lodepng.h" />
     <ClInclude Include="raytracer.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="scene.h" />
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="testStruct.h" />
   </ItemGroup>

@@ -105,6 +105,9 @@
     <ClInclude Include="testStruct.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="scene.h">
+      <Filter>Header Files\assets</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\lab.ico">

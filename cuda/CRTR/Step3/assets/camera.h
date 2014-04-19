@@ -2,6 +2,12 @@
 
 #include "../math/transform.h"
 
+#ifdef __CUDACC__
+#define CUDA_CALLABLE_MEMBER __host__ __device__
+#else
+#define CUDA_CALLABLE_MEMBER
+#endif
+
 struct Camera
 {
 	private:
@@ -39,9 +45,9 @@ struct Camera
 			this->m_height = camera.m_height;
 		}
 		
-		float Fovy() {return fovy;}
-		float &ARatio() {return aRatio;}
-		float VPD() {return vpd;}
-		int Width() {return m_width;}
-		int Height() {return m_height;}
+		CUDA_CALLABLE_MEMBER float Fovy() {return fovy;}
+		CUDA_CALLABLE_MEMBER float &ARatio() {return aRatio;}
+		CUDA_CALLABLE_MEMBER float VPD() {return vpd;}
+		CUDA_CALLABLE_MEMBER int Width() {return m_width;}
+		CUDA_CALLABLE_MEMBER int Height() {return m_height;}
 };

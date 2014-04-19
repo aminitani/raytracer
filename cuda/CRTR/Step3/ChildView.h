@@ -13,7 +13,9 @@
 #include "graphics/OpenGLWnd.h"
 #include "graphics/GrTexture.h"	// Added by ClassView
 #include "Mesh.h"
-#include "raytracer.h"
+//#include "raytracer.h"
+#include "scene.h"
+#include "assets\camera.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CChildView window
@@ -22,7 +24,7 @@ class CChildView : public COpenGLWnd
 {
 // Construction
 public:
-	CChildView();
+	//CChildView();
 
 // Attributes
 public:
@@ -55,17 +57,16 @@ protected:
     //}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
-	bool flip;
+	//CGrTexture m_senorFishyFish;
 
-	CGrTexture m_senorFishyFish;
-
-	int m_mode;
+	//int m_mode;
 	
-	CMesh m_fish;
+	//CMesh m_fish;
 	
 	float *devPtr;
 	float *pixels;
 	//Raytracer *raytracer;
+	Scene *scene;
 	Camera *camera;
 	
 	int m_width;

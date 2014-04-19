@@ -27,7 +27,7 @@ using std::thread;
 
 extern "C"
 {
-void CUDAThrender(float *pixels, TestStruct ts, Camera camera);
+void CUDAThrender(float *pixels, TestStruct ts, Camera camera, Scene scene);
 void renderTest(float*,int,int);
 }
 
@@ -38,13 +38,9 @@ CChildView::CChildView(int width, int height)
 {
     SetDoubleBuffer(true);
 
-    m_senorFishyFish.LoadFile(L"models/BLUEGILL.bmp");
-
-	flip = false;
-	
-	m_fish.SetTexture(&m_senorFishyFish);
-	
-	m_fish.LoadOBJ("models\\fish4.obj");
+    //m_senorFishyFish.LoadFile(L"models/BLUEGILL.bmp");
+	//m_fish.SetTexture(&m_senorFishyFish);
+	//m_fish.LoadOBJ("models\\fish4.obj");
 
 	m_width = width;
 	m_height = height;
@@ -57,6 +53,8 @@ CChildView::CChildView(int width, int height)
 	//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
 	float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
 	camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, m_width, m_height);
+
+	scene = new Scene();
 
 	//raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
@@ -82,6 +80,8 @@ CChildView::~CChildView()
 	pixels = NULL;
 	//delete raytracer;
 	//raytracer = NULL;
+	delete scene;
+	scene = NULL;
 
 	KillFont();
 }
@@ -261,10 +261,9 @@ void CChildView::Render(int totThreads)
 	{
 		readyToRender = false;
 		renderTest(devPtr, m_width, m_height);
-		float4 camInfo = {0.0, 0.0, 0.0, 0.0};
 
 		TestStruct ts(1.0, 0.0, 0.0);
-		CUDAThrender(devPtr, ts, *camera);
+		CUDAThrender(devPtr, ts, *camera, *scene);
 		cudaDeviceSynchronize();
 		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
 		
