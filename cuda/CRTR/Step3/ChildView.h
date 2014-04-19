@@ -65,7 +65,7 @@ private:
 	
 	float *devPtr;
 	float *pixels;
-	Raytracer *raytracer;
+	//Raytracer *raytracer;
 	Camera *camera;
 	
 	int m_width;
@@ -79,7 +79,11 @@ private:
 	CPoint mousePos;
 
 	std::chrono::high_resolution_clock::time_point lastFrameTime;
+	GLuint  base;
 	
+	GLvoid BuildFont(GLvoid);
+	GLvoid KillFont(GLvoid);
+	GLvoid GLPrint(const char *fmt, ...);
 	void Render(int numThreads);
 	void TurnTable();
 public:

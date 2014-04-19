@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "lab.h"
 #include "ChildView.h"
+#include "testStruct.h"
 #include <cmath>
 #include <thread>
 
@@ -12,6 +13,9 @@
 #include <sstream>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
+
+//text on screen
+#include <stdarg.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -23,8 +27,7 @@ using std::thread;
 
 extern "C"
 {
-void test();
-void CUDAThrender(float4 camInfo);
+void CUDAThrender(float *pixels, TestStruct ts, Camera camera);
 void renderTest(float*,int,int);
 }
 
@@ -53,9 +56,9 @@ CChildView::CChildView(int width, int height)
 	
 	//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
 	float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
-	camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, (float)m_width/(float)m_height);
+	camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, m_width, m_height);
 
-	raytracer = new Raytracer(m_width, m_height, pixels, *camera);
+	//raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
 	pendingRending = false;
 
@@ -64,6 +67,8 @@ CChildView::CChildView(int width, int height)
 	cudaMalloc((void**)&devPtr, m_width * m_height * sizeof(float) * 4);
 
 	lastFrameTime = std::chrono::high_resolution_clock::now();
+	
+	BuildFont();
 
 	//m_pDC = NULL;
 }
@@ -75,8 +80,10 @@ CChildView::~CChildView()
 	camera = NULL;
 	delete [] pixels;
 	pixels = NULL;
-	delete raytracer;
-	raytracer = NULL;
+	//delete raytracer;
+	//raytracer = NULL;
+
+	KillFont();
 }
 
 
@@ -169,9 +176,9 @@ void CChildView::OnGLDraw(CDC *pDC)
 	////DrawText(*pDC, L"sup yo", 10, CRect(50, 50, 100, 50), DT_LEFT);
 	//pDC->SetTextAlign(DT_LEFT);
 	//pDC->SetTextColor(RGB(255, 255, 255));
-	//CRect myDickM16;
-	//GetClientRect(myDickM16);//your dick is a broken vending machine
-	//pDC->DrawText("sup yo", myDickM16, DT_LEFT);
+	//CRect getRekt;
+	//GetClientRect(getRekt);
+	//pDC->DrawText("sup yo", getRekt, DT_LEFT);
 
 	std::wstringstream wss;
 	wss.fill(' ');
@@ -180,26 +187,87 @@ void CChildView::OnGLDraw(CDC *pDC)
 	wss << L" FPS";
 	GetParentFrame()->SetWindowText(wss.str().c_str());
 
+	//glTranslatef(0.0f,0.0f,-1.0f);
+	//glColor3f(1.0, 1.0, 1.0);
+	//glRasterPos2f(-.45, 0.0);
+	//GLPrint("suuuuuuuuuuuuuuuup");
+
     //glFlush();
+}
+
+//shamelessly ripped out of NEHE gamedev tutorial 13
+GLvoid CChildView::BuildFont(GLvoid)								// Build Our Bitmap Font
+{
+	HFONT	font;										// Windows Font ID
+//	HFONT	oldfont;									// Used For Good House Keeping
+
+	base = glGenLists(96);								// Storage For 96 Characters
+
+	font = CreateFont(	-24,							// Height Of Font
+						0,								// Width Of Font
+						0,								// Angle Of Escapement
+						0,								// Orientation Angle
+						FW_BOLD,						// Font Weight
+						FALSE,							// Italic
+						FALSE,							// Underline
+						FALSE,							// Strikeout
+						ANSI_CHARSET,					// Character Set Identifier
+						OUT_TT_PRECIS,					// Output Precision
+						CLIP_DEFAULT_PRECIS,			// Clipping Precision
+						ANTIALIASED_QUALITY,			// Output Quality
+						FF_DONTCARE|DEFAULT_PITCH,		// Family And Pitch
+						L"Courier New");					// Font Name
+
+//	oldfont = (HFONT)SelectObject(hDC, font);           // Selects The Font We Want
+//	wglUseFontBitmaps(hDC, 32, 96, base);				// Builds 96 Characters Starting At Character 32
+//	SelectObject(hDC, oldfont);							// Selects The Font We Want
+//	DeleteObject(font);									// Delete The Font
+}
+
+GLvoid CChildView::KillFont(GLvoid)
+{
+	glDeleteLists(base, 96);                // Delete All 96 Characters ( NEW )
+}
+
+GLvoid CChildView::GLPrint(const char *fmt, ...)					// Custom GL "Print" Routine
+{
+	char		text[256];								// Holds Our String
+	va_list		ap;										// Pointer To List Of Arguments
+
+	if (fmt == NULL)									// If There's No Text
+		return;											// Do Nothing
+
+	va_start(ap, fmt);									// Parses The String For Variables
+	    vsprintf(text, fmt, ap);						// And Converts Symbols To Actual Numbers
+	va_end(ap);											// Results Are Stored In Text
+
+	glPushAttrib(GL_LIST_BIT);							// Pushes The Display List Bits
+	glListBase(base - 32);								// Sets The Base Character to 32
+	glCallLists(strlen(text), GL_UNSIGNED_BYTE, text);	// Draws The Display List Text
+	glPopAttrib();										// Pops The Display List Bits
 }
 
 void CChildView::TurnTable()
 {
+	//want to rotate camera x degrees around center where x depends on time
+	//camera.orientation.forward = (center - eye).normalize();
+	//camera.orientation.right = vec3(cos(90deg + angle), 0, -sin(90deg+angle));
+	//camera.orientation.up = right cross forward;
 }
 
 void CChildView::Render(int totThreads)
 {
-	//raytracer->Stop();
 	if(readyToRender)
 	{
 		readyToRender = false;
-		//unsigned long long youShouldHaveJustShownMeTheValue = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 		renderTest(devPtr, m_width, m_height);
 		float4 camInfo = {0.0, 0.0, 0.0, 0.0};
-		CUDAThrender(camInfo);
-		//cudaDeviceSynchronize();
+
+		TestStruct ts(1.0, 0.0, 0.0);
+		CUDAThrender(devPtr, ts, *camera);
+		cudaDeviceSynchronize();
 		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
-		//raytracer->Render(totThreads, *camera);
+		
 		Invalidate();
 		
 		readyToRender = true;
@@ -288,3 +356,4 @@ void CChildView::OnRenderStart()
 	thread thrd(&CChildView::Render, this, totThreads);
 	thrd.detach();
 }
+

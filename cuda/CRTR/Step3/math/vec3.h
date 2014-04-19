@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cmath>
 
-class Vec3
+struct Vec3
 {
 public:
 	float x, y, z;
@@ -37,6 +37,3 @@ public:
 		return os;
 	}
 };
-
-typedef Vec3 Point;
-typedef Vec3 Normal;

@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include "testStruct.h"
+#include "assets\camera.h"
 #define N 10
 
 class MyClass {
@@ -40,6 +42,19 @@ __global__ void red( float *out, int w, int h) {
 	out[i] = mc.x;
 	out[i + 1] = (float)y / h;
 	out[i + 2] = (float)x / w;
+	out[i + 3] = 1.0;
+}
+
+__global__ void red( float *out, int w, int h, TestStruct ts) {
+	unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
+	unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+	MyClass mc;
+
+	unsigned int i = (y * w + x) * 4;
+	out[i] = ts.r;
+	out[i + 1] = ts.g;
+	out[i + 2] = ts.b;
 	out[i + 3] = 1.0;
 }
 
@@ -110,13 +125,17 @@ __global__ void red( float *out, int w, int h) {
 
 extern "C" {
 
-	void CUDAThrender(float *pixels, int w, int h, float4 camInfo)
+	void CUDAThrender(float *pixels, TestStruct ts, Camera camera)
 	{
 		//ViewPlane vp(camera);
 
 		//dim3 block(8,8,1);
 		//dim3 grid(w/block.x, h/block.y, 1);
 		//trace<<<grid, block>>>(pixels, w, h, vp);
+
+		dim3 block(8,8,1);
+		dim3 grid(camera.Width()/block.x, camera.Height()/block.y, 1);
+		red<<<grid, block>>>(pixels,camera.Width(),camera.Height(),ts);
 	}
 
 

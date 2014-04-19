@@ -202,6 +202,7 @@
     <ClInclude Include="raytracer.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="testStruct.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="raytracer.cu">

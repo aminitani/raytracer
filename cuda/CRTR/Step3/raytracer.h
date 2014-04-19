@@ -50,7 +50,7 @@ class Raytracer
 		{
 			INFINITY = std::numeric_limits<float>::infinity();
 			image = new Image(width, height, "test.png");
-			camera = new Camera(Transform(), 0, 0);
+			camera = new Camera(Transform(), 0, 0, 0);
 			*camera = inCamera;
 
 			pixels = inPixels;

@@ -8,7 +8,7 @@
 using std::ostream;
 using std::endl;
 
-class Transform
+struct Transform
 {
 	private:
 		float contents[4][4];
