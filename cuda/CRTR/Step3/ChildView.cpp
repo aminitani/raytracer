@@ -9,6 +9,7 @@
 
 #include <Windows.h>
 #include <iostream>
+#include <sstream>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
@@ -47,6 +48,8 @@ CChildView::CChildView(int width, int height)
 	totThreads = std::thread::hardware_concurrency();
 	//totThreads = (std::thread::hardware_concurrency() > 1) ? std::thread::hardware_concurrency()-1 : 1;
 	pixels = new float[m_width*m_height*4];
+	for(int i = 0; i < m_width * m_height * 4; i++)
+		pixels[i] = 0.0;
 	
 	//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
 	float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
@@ -56,11 +59,11 @@ CChildView::CChildView(int width, int height)
 	readyToRender = true;
 	pendingRending = false;
 
-	SetCursorPos(0, 0);
-
-	mousePos = CPoint(0, 0);
+	GetCursorPos(&mousePos);
 
 	cudaMalloc((void**)&devPtr, m_width * m_height * sizeof(float) * 4);
+
+	lastFrameTime = std::chrono::high_resolution_clock::now();
 
 	//m_pDC = NULL;
 }
@@ -130,7 +133,6 @@ void CChildView::OnGLDraw(CDC *pDC)
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	//rendertest wuz here
-	cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_FLOAT, pixels);
 
 	glClearColor(0.5, 0.5, 0.5, 1.0);
@@ -155,7 +157,34 @@ void CChildView::OnGLDraw(CDC *pDC)
 
 	glDisable(GL_TEXTURE_2D);
 
+	//high res clock count returns ten millionths of a second
+	//auto first = std::chrono::high_resolution_clock::now();
+	//Sleep(1000);
+	//auto second = std::chrono::high_resolution_clock::now();
+
+	//unsigned long long oneSecond = (second - first).count();
+
+	int fps = 1.0 / ( (std::chrono::high_resolution_clock::now() - lastFrameTime).count() / 10000000.0);
+	lastFrameTime = std::chrono::high_resolution_clock::now();
+	////DrawText(*pDC, L"sup yo", 10, CRect(50, 50, 100, 50), DT_LEFT);
+	//pDC->SetTextAlign(DT_LEFT);
+	//pDC->SetTextColor(RGB(255, 255, 255));
+	//CRect myDickM16;
+	//GetClientRect(myDickM16);//your dick is a broken vending machine
+	//pDC->DrawText("sup yo", myDickM16, DT_LEFT);
+
+	std::wstringstream wss;
+	wss.fill(' ');
+	wss.width(4);
+	wss << fps;
+	wss << L" FPS";
+	GetParentFrame()->SetWindowText(wss.str().c_str());
+
     //glFlush();
+}
+
+void CChildView::TurnTable()
+{
 }
 
 void CChildView::Render(int totThreads)
@@ -165,10 +194,11 @@ void CChildView::Render(int totThreads)
 	{
 		readyToRender = false;
 		//unsigned long long youShouldHaveJustShownMeTheValue = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-		//renderTest(devPtr, m_width, m_height);
+		renderTest(devPtr, m_width, m_height);
 		float4 camInfo = {0.0, 0.0, 0.0, 0.0};
 		CUDAThrender(camInfo);
 		//cudaDeviceSynchronize();
+		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
 		//raytracer->Render(totThreads, *camera);
 		Invalidate();
 		

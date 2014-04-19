@@ -82,6 +82,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	//m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
 	EnableDocking(CBRS_ALIGN_ANY);
 	//DockControlBar(&m_wndToolBar);
+	
+	SetWindowText(L"The Best Parallel Project");
+	int monResWidth = GetSystemMetrics( SM_CXSCREEN );
+	int monResHeight = GetSystemMetrics( SM_CYSCREEN );
+	int width = m_width + 100;
+	int height = m_height + 150;
+	SetWindowPos(&wndTop, monResWidth / 2 - width / 2, monResHeight / 2 - height / 2, width, height, SWP_SHOWWINDOW);
 
 	return 0;
 }
@@ -131,26 +138,6 @@ void CMainFrame::OnSetFocus(CWnd* pOldWnd)
 {
 	//RECT rcClient, rcWind;
 	//POINT ptDiff;
-	//GetClientRect(&rcClient);
-	//GetWindowRect(&rcWind);
-	//ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
-	//ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
-	//SetWindowPos(&wndTop, 0, 0, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
-
-	
-	//
-	//GetClientRect(&rcClient);
-	//GetWindowRect(&rcWind);
-	//ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
-	//ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
-	//SetWindowPos(&wndTop, 0, 0, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
-	//
-	//GetClientRect(&rcClient);
-	//GetWindowRect(&rcWind);
-	//ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;
-	//ptDiff.y = (rcWind.bottom - rcWind.top) - rcClient.bottom;
-	//SetWindowPos(&wndTop, 0, 0, m_width + ptDiff.x, m_height + ptDiff.y, SWP_SHOWWINDOW);
-	//
 	//GetClientRect(&rcClient);
 	//GetWindowRect(&rcWind);
 	//ptDiff.x = (rcWind.right - rcWind.left) - rcClient.right;

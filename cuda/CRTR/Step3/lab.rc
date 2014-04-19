@@ -114,6 +114,7 @@ BEGIN
     POPUP "Render"
     BEGIN
         MENUITEM "Start",                       ID_RENDER_START
+        MENUITEM "Turntable",                   ID_RENDER_TURNTABLE
     END
 END
 

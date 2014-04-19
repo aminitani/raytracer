@@ -9,6 +9,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include <chrono>
 #include "graphics/OpenGLWnd.h"
 #include "graphics/GrTexture.h"	// Added by ClassView
 #include "Mesh.h"
@@ -77,9 +78,10 @@ private:
 
 	CPoint mousePos;
 
-	//CDC *m_pDC;
-
+	std::chrono::high_resolution_clock::time_point lastFrameTime;
+	
 	void Render(int numThreads);
+	void TurnTable();
 public:
 	afx_msg void OnRenderStart();
 };
