@@ -76,7 +76,7 @@ private:
 
 	CPoint mousePos;
 
-	//CDC *m_pDC;
+	std::chrono::high_resolution_clock::time_point lastFrameTime;
 
 	void Render(int numThreads);
 public:

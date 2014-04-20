@@ -4,7 +4,6 @@
 #include "stdafx.h"
 #include "lab.h"
 #include "ChildView.h"
-#include "testStruct.h"
 #include <cmath>
 #include <thread>
 #include <limits>
@@ -29,7 +28,7 @@ using std::thread;
 extern "C"
 {
 void CUDAThrender(float *pixels, float INFINITY, Camera camera, Scene scene);
-void renderTest(float*,int,int);
+//void renderTest(float*,int,int);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -68,8 +67,6 @@ CChildView::CChildView(int width, int height)
 	lastFrameTime = std::chrono::high_resolution_clock::now();
 	
 	BuildFont();
-
-	//m_pDC = NULL;
 }
 
 CChildView::~CChildView()
@@ -166,11 +163,6 @@ void CChildView::OnGLDraw(CDC *pDC)
 	glDisable(GL_TEXTURE_2D);
 
 	//high res clock count returns ten millionths of a second
-	//auto first = std::chrono::high_resolution_clock::now();
-	//Sleep(1000);
-	//auto second = std::chrono::high_resolution_clock::now();
-
-	//unsigned long long oneSecond = (second - first).count();
 
 	int fps = 1.0 / ( (std::chrono::high_resolution_clock::now() - lastFrameTime).count() / 10000000.0);
 	lastFrameTime = std::chrono::high_resolution_clock::now();
@@ -263,7 +255,6 @@ void CChildView::Render(int totThreads)
 		readyToRender = false;
 		//renderTest(devPtr, m_width, m_height);
 
-		TestStruct ts(1.0, 0.0, 0.0);
 		CUDAThrender(devPtr, std::numeric_limits<float>::infinity(), *camera, *scene);
 		cudaDeviceSynchronize();
 		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);

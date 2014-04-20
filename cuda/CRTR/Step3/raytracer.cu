@@ -44,10 +44,10 @@ __device__ void ComputePrimaryRay(unsigned x, unsigned y, unsigned width, unsign
 	primaryRay->Direction() = (target - camera->orientation.Pos()).normalize();
 }
 
-__global__ void Trace(float *pixels, float INFINITY, Camera camera, Scene scene)
+__global__ void Trace(float *pixels, float INFINITY, Camera camera, Scene *scene)
 {
 	unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-	unsigned int j = blockIdx.y * blockDim.y + threadIdx.y;
+	unsigned int j = camera.Height() - 1 - (blockIdx.y * blockDim.y + threadIdx.y);
 
 	//this is the color to be contributed to the pixels
 	Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
@@ -56,54 +56,48 @@ __global__ void Trace(float *pixels, float INFINITY, Camera camera, Scene scene)
 	Ray primaryRay;
 	ComputePrimaryRay(i, j, camera.Width(), camera.Height(), &primaryRay, &camera);
 	
-//	float minDist = INFINITY;
-//	Sphere *sphere = NULL;
-//	for (unsigned k = 0; k < scene.numSpheres; ++k) {
-//		float t0 = INFINITY;
-//		if ((scene.spheres[k]).Intersect(primaryRay, &t0)) {
-//			if (t0 < minDist) {
-//				sphere = &(scene.spheres[k]);
-//				minDist = t0; // update min distance
-//			}
-//		}
-//	}
-//	if (object != NULL) {
-//		// compute phit and nhit
-//		Vec3 pHit = primaryRay.Point() + primaryRay.Direction() * minDist; // point of intersection
-//		Vec3 nHit = object->Normal(pHit);
-//
-//		// compute illumination
-//		Ray shadowRay;
-//		shadowRay.Point() = pHit;
-//		shadowRay.Direction() = (light->position - pHit/*(pHit + CollisionError * nhit)*/).normalize();
-//		bool isInShadow = false;
-//		for (unsigned k = 0; k < objects.size(); ++k) {
-//			float t0 = INFINITY;
-//			if ((*objects[k]).Intersect(shadowRay, &t0)) {
-//				isInShadow = true;
-//				break;
-//			}
-//		}
-//		if (!isInShadow) {
-//			pixel.SetColor(object->Color() * max(0.0f, nHit.dot(shadowRay.Direction())) * light->brightness);
-//		}
-//		else
-//			pixel.SetColor(BLACK);
-//	}
-//	else
-//		pixel.SetColor(defaultColor);
-//
-//	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+0] = pixel.r;
-//	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+1] = pixel.g;
-//	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+2] = pixel.b;
-//	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+3] = pixel.a;
+	float minDist = INFINITY;
+	Sphere *sphere = NULL;
+	for (unsigned k = 0; k < scene->numSpheres; ++k) {
+		float t0 = INFINITY;
+		if ((scene->spheres[k]).Intersect(primaryRay, &t0)) {
+			if (t0 < minDist) {
+				sphere = &(scene->spheres[k]);
+				minDist = t0; // update min distance
+			}
+		}
+	}
+	if (sphere != NULL) {
+		// compute phit and nhit
+		Vec3 pHit = primaryRay.Point() + primaryRay.Direction() * minDist; // point of intersection
+		Vec3 nHit = sphere->Normal(pHit);
 
-	//test crap
-	unsigned int k = (j * camera.Width() + i) * 4;
-	pixels[k] = 1.0;
-	pixels[k + 1] = (float)i / camera.Width();
-	pixels[k + 2] = (float)j / camera.Height();
-	pixels[k + 3] = 1.0;
+		// compute illumination
+		Ray shadowRay;
+		shadowRay.Point() = pHit;
+		shadowRay.Direction() = (scene->light->position - pHit/*(pHit + CollisionError * nhit)*/).normalize();
+		bool isInShadow = false;
+		for (unsigned k = 0; k < scene->numSpheres; ++k) {
+			float t0 = INFINITY;
+			if ((scene->spheres[k]).Intersect(shadowRay, &t0)) {
+				isInShadow = true;
+				break;
+			}
+		}
+		if (!isInShadow) {
+			pixel.SetColor(sphere->Color() * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->brightness);
+		}
+		else {
+			pixel.SetColor(Vec3(0.0));
+		}
+	}
+	else
+		pixel.SetColor(Vec3(0.3));
+
+	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+0] = pixel.r;
+	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+1] = pixel.g;
+	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+2] = pixel.b;
+	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+3] = pixel.a;
 }
 
 
@@ -112,9 +106,26 @@ extern "C" {
 
 	void CUDAThrender(float *pixels, float INFINITY, Camera camera, Scene scene)
 	{
+		//TODO: right here, replace the pointer to spheres and the pointer to light
+		//in the scene variable with newly allocated device pointers before passing
+		//the scene to the device in the trace call
+		Sphere *dSpheres;
+		cudaMalloc((void**) &(dSpheres), sizeof(Sphere)*scene.numSpheres);
+		cudaMemcpy(dSpheres, scene.spheres, sizeof(Sphere)*scene.numSpheres, cudaMemcpyHostToDevice);
+		scene.spheres = dSpheres;
+		
+		Light *dLight;
+		cudaMalloc((void**) &(dLight), sizeof(Light));
+		cudaMemcpy(dLight, scene.light, sizeof(Light), cudaMemcpyHostToDevice);
+		scene.light = dLight;
+		
+		Scene *dScene;
+		cudaMalloc((void**) &(dScene), sizeof(Scene));
+		cudaMemcpy(dScene, &scene, sizeof(Scene), cudaMemcpyHostToDevice);
+
 		dim3 block(8,8,1);
 		dim3 grid(camera.Width()/block.x, camera.Height()/block.y, 1);
-		Trace<<<grid, block>>>(pixels, INFINITY, camera, scene);
+		Trace<<<grid, block>>>(pixels, INFINITY, camera, dScene);
 		
 		//red<<<grid, block>>>(pixels, ts, camera, scene);
 	}

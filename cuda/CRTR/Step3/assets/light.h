@@ -14,7 +14,7 @@ struct Light
 		//TODO: replace brightness with color
 		float brightness;
 		
-		Light(Vec3 pos, float bright)
+		CUDA_CALLABLE_MEMBER Light(Vec3 pos, float bright)
 		{
 			position = pos;
 			brightness = bright;

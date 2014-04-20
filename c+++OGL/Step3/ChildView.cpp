@@ -6,6 +6,7 @@
 #include "ChildView.h"
 #include <cmath>
 #include <thread>
+#include <sstream>
 
 #include <Windows.h>
 #include <iostream>
@@ -47,11 +48,9 @@ CChildView::CChildView(int width, int height)
 	readyToRender = true;
 	pendingRending = false;
 
-	SetCursorPos(0, 0);
+	GetCursorPos(&mousePos);
 
-	mousePos = CPoint(0, 0);
-
-	//m_pDC = NULL;
+	lastFrameTime = std::chrono::high_resolution_clock::now();
 }
 
 CChildView::~CChildView()
@@ -142,6 +141,16 @@ void CChildView::OnGLDraw(CDC *pDC)
 	glEnd();
 
 	glDisable(GL_TEXTURE_2D);
+
+	int fps = 1.0 / ( (std::chrono::high_resolution_clock::now() - lastFrameTime).count() / 10000000.0);
+	lastFrameTime = std::chrono::high_resolution_clock::now();
+
+	std::wstringstream wss;
+	wss.fill(' ');
+	wss.width(4);
+	wss << fps;
+	wss << L" FPS";
+	GetParentFrame()->SetWindowText(wss.str().c_str());
 
     //glFlush();
 }

@@ -21,9 +21,6 @@ using std::thread;
 
 #define CollisionError 0.05
 
-extern "C" void
-test();
-
 struct ViewPlane
 {
 	ViewPlane(Camera *camera)
@@ -184,8 +181,6 @@ class Raytracer
 		
 		void Render(int numThreads, Camera newCam)
 		{
-			test();
-
 			*camera = newCam;
 			ViewPlane vp(camera);
 

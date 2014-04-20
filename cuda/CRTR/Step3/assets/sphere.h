@@ -1,5 +1,4 @@
 #pragma once
-#include "./object.h"
 
 #ifdef __CUDACC__
 #define CUDA_CALLABLE_MEMBER __host__ __device__
@@ -7,14 +6,22 @@
 #define CUDA_CALLABLE_MEMBER
 #endif
 
-class Sphere : public Object {
+class Sphere {
 public:
 	Vec3 center;
 	float radius;
 	float radius2;
-	Sphere(Vec3 c, float r, Vec3 _color) : Object(_color), center(c), radius(r), radius2(r*r) {}
 
-	virtual bool Intersect(Ray &ray, float *t0 = NULL)
+	CUDA_CALLABLE_MEMBER Sphere(Vec3 c, float r, Vec3 _color) : color(_color), center(c), radius(r), radius2(r*r) {}
+
+	CUDA_CALLABLE_MEMBER Sphere(const Sphere &sphere)
+	{
+		this->center = sphere.center;
+		this->radius = sphere.radius;
+		this->radius2 = sphere.radius2;
+	}
+
+	CUDA_CALLABLE_MEMBER bool Intersect(Ray &ray, float *t0 = NULL)
 	{
 		Vec3 l = center - ray.Point();
 		float tca = l.dot(ray.Direction());
@@ -31,9 +38,14 @@ public:
 		return true;
 	}
 
-	virtual Vec3 Normal(Vec3 phit) {
+	CUDA_CALLABLE_MEMBER Vec3 Normal(Vec3 phit) {
 		Vec3 normal = phit - center;
 		normal.normalize();
 		return normal;
 	}
+
+	CUDA_CALLABLE_MEMBER Vec3 Color() {return color;}
+
+protected:
+	Vec3 color;
 };

@@ -55,7 +55,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	// create a view to occupy the client area of the frame
 	if (!m_wndView->Create(NULL, NULL, AFX_WS_DEFAULT_VIEW,
-		CRect(0, 0, 640, 480), this, AFX_IDW_PANE_FIRST, NULL))
+		CRect(0, 0, 0, 0), this, AFX_IDW_PANE_FIRST, NULL))
 	{
 		TRACE0("Failed to create view window\n");
 		return -1;
@@ -82,6 +82,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	//m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
 	EnableDocking(CBRS_ALIGN_ANY);
 	//DockControlBar(&m_wndToolBar);
+	
+	SetWindowText(L"The Best Parallel Project");
+	int monResWidth = GetSystemMetrics( SM_CXSCREEN );
+	int monResHeight = GetSystemMetrics( SM_CYSCREEN );
+	int width = m_width + 100;
+	int height = m_height + 150;
+	SetWindowPos(&wndTop, monResWidth / 2 - width / 2, monResHeight / 2 - height / 2, width, height, SWP_SHOWWINDOW);
 
 	return 0;
 }
