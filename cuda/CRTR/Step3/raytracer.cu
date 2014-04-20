@@ -2,31 +2,10 @@
 #include "testStruct.h"
 #include "assets\camera.h"
 #include "scene.h"
+#include "math\ray.h"
+#include "assets\image.h"
 
 #define N 10
-
-class MyClass {
-public:
-	float x;
-	__device__ MyClass() {
-		x = .5;
-	}
-};
-
-//struct ViewPlane
-//{
-//	ViewPlane(Camera *camera)
-//	{
-//		//these are half the viewplane dimensions
-//		//TODO: tan is a bad function. works for most reasonable values though.
-//		vert = (float) tan(camera->Fovy() / 2.0) * camera->VPD();
-//		hor = vert * camera->ARatio();
-//		VPCenter = camera->orientation.Pos() + ( camera->orientation.Forward() * camera->VPD() );
-//		ULCorner = VPCenter + camera->orientation.Left() * hor + camera->orientation.Up() * vert;
-//	}
-//	float vert, hor;
-//	Point VPCenter, ULCorner;
-//};
 
 __global__ void add( int *a, int *b, int *c ) {
 	 int tid = blockIdx.x; // handle the data at this index
@@ -38,10 +17,8 @@ __global__ void red( float *out, int w, int h) {
 	unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
 	unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-	MyClass mc;
-
 	unsigned int i = (y * w + x) * 4;
-	out[i] = mc.x;
+	out[i] = 1.0;
 	out[i + 1] = (float)y / h;
 	out[i + 2] = (float)x / w;
 	out[i + 3] = 1.0;
@@ -51,8 +28,6 @@ __global__ void red( float *out, TestStruct ts, Camera camera, Scene scene) {
 	unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
 	unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-	MyClass mc;
-
 	unsigned int i = (y * camera.Width() + x) * 4;
 	out[i] = ts.r;
 	out[i + 1] = ts.g;
@@ -60,33 +35,34 @@ __global__ void red( float *out, TestStruct ts, Camera camera, Scene scene) {
 	out[i + 3] = 1.0;
 }
 
-//__device__ void ComputePrimaryRay(unsigned x, unsigned y, unsigned width, unsigned height, Ray *primaryRay, ViewPlane &vp)
-//{
-//	primaryRay->Point() = camera->orientation.Pos();
-//	Point target =
-//	vp.ULCorner - camera->orientation.Left() * ( ((x+.5) / width) * 2*vp.hor )
-//	- camera->orientation.Up() * ( ((y+.5) / height) * 2*vp.vert );
-//	primaryRay->Direction() = (target - camera->orientation.Pos()).normalize();
-//}
-//
-//__global__ void Trace(float *pixels, int width, int height, ViewPlane &vp)
-//{
-//	unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-//	unsigned int j = blockIdx.y * blockDim.y + threadIdx.y;
-//
-//	//this is the color to be contributed to the pixels
-//	Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
-//
-//	// compute primary ray direction
-//	Ray primaryRay;
-//	ComputePrimaryRay(i, j, width, height, &primaryRay, vp);
+__device__ void ComputePrimaryRay(unsigned x, unsigned y, unsigned width, unsigned height, Ray *primaryRay, Camera *camera)
+{
+	primaryRay->Point() = camera->orientation.Pos();
+	Vec3 target =
+	camera->GetViewPlane().ULCorner - camera->orientation.Left() * ( ((x+.5) / width) * 2*camera->GetViewPlane().hor )
+	- camera->orientation.Up() * ( ((y+.5) / height) * 2*camera->GetViewPlane().vert );
+	primaryRay->Direction() = (target - camera->orientation.Pos()).normalize();
+}
+
+__global__ void Trace(float *pixels, float INFINITY, Camera camera, Scene scene)
+{
+	unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+	unsigned int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+	//this is the color to be contributed to the pixels
+	Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
+
+	// compute primary ray direction
+	Ray primaryRay;
+	ComputePrimaryRay(i, j, camera.Width(), camera.Height(), &primaryRay, &camera);
+	
 //	float minDist = INFINITY;
-//	Object *object = NULL;
-//	for (unsigned k = 0; k < objects.size(); ++k) {
+//	Sphere *sphere = NULL;
+//	for (unsigned k = 0; k < scene.numSpheres; ++k) {
 //		float t0 = INFINITY;
-//		if ((*objects[k]).Intersect(primaryRay, &t0)) {
+//		if ((scene.spheres[k]).Intersect(primaryRay, &t0)) {
 //			if (t0 < minDist) {
-//				object = objects[k];
+//				sphere = &(scene.spheres[k]);
 //				minDist = t0; // update min distance
 //			}
 //		}
@@ -117,27 +93,30 @@ __global__ void red( float *out, TestStruct ts, Camera camera, Scene scene) {
 //	else
 //		pixel.SetColor(defaultColor);
 //
-//	pixels[((height-1-j)*width + i)*4+0] = pixel.r;
-//	pixels[((height-1-j)*width + i)*4+1] = pixel.g;
-//	pixels[((height-1-j)*width + i)*4+2] = pixel.b;
-//	pixels[((height-1-j)*width + i)*4+3] = pixel.a;
-//}
+//	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+0] = pixel.r;
+//	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+1] = pixel.g;
+//	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+2] = pixel.b;
+//	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+3] = pixel.a;
+
+	//test crap
+	unsigned int k = (j * camera.Width() + i) * 4;
+	pixels[k] = 1.0;
+	pixels[k + 1] = (float)i / camera.Width();
+	pixels[k + 2] = (float)j / camera.Height();
+	pixels[k + 3] = 1.0;
+}
 
 
 
 extern "C" {
 
-	void CUDAThrender(float *pixels, TestStruct ts, Camera camera, Scene scene)
+	void CUDAThrender(float *pixels, float INFINITY, Camera camera, Scene scene)
 	{
-		//ViewPlane vp(camera);
-
-		//dim3 block(8,8,1);
-		//dim3 grid(w/block.x, h/block.y, 1);
-		//trace<<<grid, block>>>(pixels, w, h, vp);
-		
 		dim3 block(8,8,1);
 		dim3 grid(camera.Width()/block.x, camera.Height()/block.y, 1);
-		red<<<grid, block>>>(pixels, ts, camera, scene);
+		Trace<<<grid, block>>>(pixels, INFINITY, camera, scene);
+		
+		//red<<<grid, block>>>(pixels, ts, camera, scene);
 	}
 
 

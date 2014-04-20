@@ -7,6 +7,7 @@
 #include "testStruct.h"
 #include <cmath>
 #include <thread>
+#include <limits>
 
 #include <Windows.h>
 #include <iostream>
@@ -27,7 +28,7 @@ using std::thread;
 
 extern "C"
 {
-void CUDAThrender(float *pixels, TestStruct ts, Camera camera, Scene scene);
+void CUDAThrender(float *pixels, float INFINITY, Camera camera, Scene scene);
 void renderTest(float*,int,int);
 }
 
@@ -260,10 +261,10 @@ void CChildView::Render(int totThreads)
 	if(readyToRender)
 	{
 		readyToRender = false;
-		renderTest(devPtr, m_width, m_height);
+		//renderTest(devPtr, m_width, m_height);
 
 		TestStruct ts(1.0, 0.0, 0.0);
-		CUDAThrender(devPtr, ts, *camera, *scene);
+		CUDAThrender(devPtr, std::numeric_limits<float>::infinity(), *camera, *scene);
 		cudaDeviceSynchronize();
 		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
 		

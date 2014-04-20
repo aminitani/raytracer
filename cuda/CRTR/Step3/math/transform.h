@@ -8,6 +8,12 @@
 using std::ostream;
 using std::endl;
 
+#ifdef __CUDACC__
+#define CUDA_CALLABLE_MEMBER __host__ __device__
+#else
+#define CUDA_CALLABLE_MEMBER
+#endif
+
 struct Transform
 {
 	private:
@@ -17,7 +23,7 @@ struct Transform
 	
 	public:
 		//static const Transform Identity
-		Transform()
+		CUDA_CALLABLE_MEMBER Transform()
 		{
 			rows = 4;
 			cols = 4;
@@ -25,7 +31,7 @@ struct Transform
 		}
 		
 		//I demand an array of 16 floats organized row-major!
-		Transform(float input[])
+		CUDA_CALLABLE_MEMBER Transform(float input[])
 		{
 			rows = 4;
 			cols = 4;
@@ -39,7 +45,7 @@ struct Transform
 		}
 		
 		//not tested
-		Transform(const Transform &other)
+		CUDA_CALLABLE_MEMBER Transform(const Transform &other)
 		{
 			rows = 4;
 			cols = 4;
@@ -53,18 +59,18 @@ struct Transform
 		}
 		
 		//access width
-		int GetCols() const { return cols; }
+		CUDA_CALLABLE_MEMBER int GetCols() const { return cols; }
 		
 		//access height
-		int GetRows() const { return rows; }
+		CUDA_CALLABLE_MEMBER int GetRows() const { return rows; }
 		
 		//access index in matrix w/ const
-		float GetIndex(int row, int column) const { return contents[row][column]; }
+		CUDA_CALLABLE_MEMBER float GetIndex(int row, int column) const { return contents[row][column]; }
 		
 		//access index in matrix by ref
-		float& operator()(int row, int column) { return contents[row][column]; }
+		CUDA_CALLABLE_MEMBER float& operator()(int row, int column) { return contents[row][column]; }
 		
-		void Identify()
+		CUDA_CALLABLE_MEMBER void Identify()
 		{
 			for(int i = 0; i < rows; i++)
 			{
@@ -78,34 +84,34 @@ struct Transform
 			}
 		}
 		
-		const Vec3 Forward()
+		CUDA_CALLABLE_MEMBER const Vec3 Forward()
 		{
 			return Vec3((*this).GetIndex(0, 2), (*this).GetIndex(1, 2), (*this).GetIndex(2, 2));
 		}
 		
-		const Vec3 Left()
+		CUDA_CALLABLE_MEMBER const Vec3 Left()
 		{
 			return Vec3((*this).GetIndex(0, 0), (*this).GetIndex(1, 0), (*this).GetIndex(2, 0));
 		}
 		
-		const Vec3 Up()
+		CUDA_CALLABLE_MEMBER const Vec3 Up()
 		{
 			return Vec3((*this).GetIndex(0, 1), (*this).GetIndex(1, 1), (*this).GetIndex(2, 1));
 		}
 		
-		const Vec3 Pos()
+		CUDA_CALLABLE_MEMBER const Vec3 Pos()
 		{
 			return Vec3((*this).GetIndex(3, 0), (*this).GetIndex(3, 1), (*this).GetIndex(3, 2));
 		}
 
-		void Translate(Vec3 vec)
+		CUDA_CALLABLE_MEMBER void Translate(Vec3 vec)
 		{
 			contents[3][0] += vec.x;
 			contents[3][1] += vec.y;
 			contents[3][2] += vec.z;
 		}
 		
-		Transform& operator=(const Transform& other)
+		CUDA_CALLABLE_MEMBER Transform& operator=(const Transform& other)
 		{
 			if(this == &other)
 				return *this;

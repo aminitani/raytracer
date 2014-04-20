@@ -9,15 +9,21 @@ using std::string;
 using std::vector;
 using std::min;
 
+#ifdef __CUDACC__
+#define CUDA_CALLABLE_MEMBER __host__ __device__
+#else
+#define CUDA_CALLABLE_MEMBER
+#endif
+
 class Pixel
 {
 public:
 	float r, g, b, a;
 	
-	Pixel() {r = 0; g = 0; b = 0; a = 0;}
-	Pixel(float rr, float gg, float bb, float aa) : r(rr), g(gg), b(bb), a(aa) {}
+	CUDA_CALLABLE_MEMBER Pixel() {r = 0; g = 0; b = 0; a = 0;}
+	CUDA_CALLABLE_MEMBER Pixel(float rr, float gg, float bb, float aa) : r(rr), g(gg), b(bb), a(aa) {}
 	
-	void SetColor(Vec3 color)
+	CUDA_CALLABLE_MEMBER void SetColor(Vec3 color)
 	{
 		r = color.x;
 		g = color.y;
@@ -25,7 +31,7 @@ public:
 		a = 1.0f;
 	}
 	
-	void SetColor(float rr, float gg, float bb, float aa)
+	CUDA_CALLABLE_MEMBER void SetColor(float rr, float gg, float bb, float aa)
 	{
 		r = rr;
 		g = gg;
@@ -33,9 +39,9 @@ public:
 		a = aa;
 	}
 	
-	Pixel operator + (const Pixel &p) const { return Pixel(r + p.r, g + p.g, b + p.b, a + p.a); }
-	Pixel operator * (const unsigned int &i) const { return Pixel(r * i, g * i, b * i, a * i); }
-	Pixel operator / (const unsigned int &i) const { return Pixel(r / i, g / i, b / i, a / i); }
+	CUDA_CALLABLE_MEMBER Pixel operator + (const Pixel &p) const { return Pixel(r + p.r, g + p.g, b + p.b, a + p.a); }
+	CUDA_CALLABLE_MEMBER Pixel operator * (const unsigned int &i) const { return Pixel(r * i, g * i, b * i, a * i); }
+	CUDA_CALLABLE_MEMBER Pixel operator / (const unsigned int &i) const { return Pixel(r / i, g / i, b / i, a / i); }
 };
 
 class ImagePixel

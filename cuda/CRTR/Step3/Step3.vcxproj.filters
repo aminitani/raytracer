@@ -69,9 +69,6 @@
     <ClInclude Include="png\lodepng.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="assets\camera.h">
-      <Filter>Header Files\assets</Filter>
-    </ClInclude>
     <ClInclude Include="assets\image.h">
       <Filter>Header Files\assets</Filter>
     </ClInclude>
@@ -106,6 +103,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="scene.h">
+      <Filter>Header Files\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="assets\camera.h">
       <Filter>Header Files\assets</Filter>
     </ClInclude>
   </ItemGroup>

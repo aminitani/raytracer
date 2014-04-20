@@ -1,6 +1,12 @@
 #pragma once
 #include "./object.h"
 
+#ifdef __CUDACC__
+#define CUDA_CALLABLE_MEMBER __host__ __device__
+#else
+#define CUDA_CALLABLE_MEMBER
+#endif
+
 class Sphere : public Object {
 public:
 	Vec3 center;

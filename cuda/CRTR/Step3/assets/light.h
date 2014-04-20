@@ -1,7 +1,13 @@
 #pragma once
 #include "../math/vec3.h"
 
-class Light
+#ifdef __CUDACC__
+#define CUDA_CALLABLE_MEMBER __host__ __device__
+#else
+#define CUDA_CALLABLE_MEMBER
+#endif
+
+struct Light
 {
 	public:
 		Vec3 position;
@@ -13,7 +19,4 @@ class Light
 			position = pos;
 			brightness = bright;
 		}
-		
-		// Vec3 &Position() {return position;}
-		// float &Brightness() {return brightness;}
 };
