@@ -19,6 +19,7 @@ public:
 		this->center = sphere.center;
 		this->radius = sphere.radius;
 		this->radius2 = sphere.radius2;
+		this->color = sphere.color;
 	}
 
 	CUDA_CALLABLE_MEMBER bool Intersect(Ray &ray, float *t0 = NULL)
