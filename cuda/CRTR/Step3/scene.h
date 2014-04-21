@@ -24,9 +24,9 @@ struct Scene
 		numSpheres = 3;
 		spheres = (Sphere *) malloc (numSpheres * sizeof(Sphere));
 		
-		spheres[0] = Sphere(Vec3(3, 1, -2), 3.0, Vec3(1, 0, 1));
-		spheres[1] = Sphere(Vec3(-2, -1, 2), 2.0, Vec3(1, 1, 0));
-		spheres[2] = Sphere(Vec3(0, -10005, 0), 10000, Vec3(0, 1, 1));
+		spheres[0] = Sphere( Vec3(3, 1, -2), 3.0, Material(false, 1.5, Vec3(1, 0, 1)) );
+		spheres[1] = Sphere( Vec3(-2, -1, 2), 2.0, Material(false, 1.5, Vec3(1, 1, 0)) );
+		spheres[2] = Sphere( Vec3(0, -10005, 0), 10000, Material(false, 1.5, Vec3(0, 1, 1)) );
 
 		light = new Light(Vec3(-30.0,30.0,30.0), 0.8);
 	}

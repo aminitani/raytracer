@@ -39,12 +39,6 @@
     <ClInclude Include="..\..\hackedheader\gl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\GrCamera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\GrVector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lab.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -58,9 +52,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StdAfx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\GrTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Mesh.h">
@@ -107,6 +98,18 @@
     </ClInclude>
     <ClInclude Include="assets\camera.h">
       <Filter>Header Files\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="material.h">
+      <Filter>Header Files\assets</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\GrCamera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\GrTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\GrVector.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

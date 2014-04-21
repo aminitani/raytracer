@@ -303,9 +303,9 @@ void CChildView::OnMouseMove(UINT nFlags, CPoint point)
 	{
 		int wid, hit;
 		GetSize(wid, hit);
-
-		camera->orientation.Translate( camera->orientation.Left() * ( (point.x - mousePos.x) / (float)wid ) );
-		camera->orientation.Translate( camera->orientation.Up() * ( (point.y - mousePos.y) / (float)hit ) );
+		
+		camera->orientation.RotateOnYAroundPoint(-90 * ( (point.x - mousePos.x) / (float)wid ), camera->Center());
+		camera->orientation.RotateOnAxisAroundPoint(-90 * ( (point.y - mousePos.y) / (float)hit ), camera->orientation.Left(), camera->Center());
 		thread thrd(&CChildView::Render, this);
 		thrd.detach();
 	}
@@ -314,9 +314,9 @@ void CChildView::OnMouseMove(UINT nFlags, CPoint point)
 	{
 		int wid, hit;
 		GetSize(wid, hit);
-		
-		camera->orientation.RotateOnYAroundPoint(-90 * ( (point.x - mousePos.x) / (float)wid ), camera->Center());
-		camera->orientation.RotateOnAxisAroundPoint(-90 * ( (point.y - mousePos.y) / (float)hit ), camera->orientation.Left(), camera->Center());
+
+		camera->orientation.Translate( camera->orientation.Left() * ( (point.x - mousePos.x) / (float)wid ) );
+		camera->orientation.Translate( camera->orientation.Up() * ( (point.y - mousePos.y) / (float)hit ) );
 		thread thrd(&CChildView::Render, this);
 		thrd.detach();
 	}

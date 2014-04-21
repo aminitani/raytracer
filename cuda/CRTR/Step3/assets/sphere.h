@@ -1,4 +1,5 @@
 #pragma once
+#include "material.h"
 
 #ifdef __CUDACC__
 #define CUDA_CALLABLE_MEMBER __host__ __device__
@@ -12,14 +13,14 @@ public:
 	float radius;
 	float radius2;
 
-	CUDA_CALLABLE_MEMBER Sphere(Vec3 c, float r, Vec3 _color) : color(_color), center(c), radius(r), radius2(r*r) {}
+	CUDA_CALLABLE_MEMBER Sphere(Vec3 c, float r, Material inMaterial = Material()) : material(inMaterial), center(c), radius(r), radius2(r*r) {}
 
 	CUDA_CALLABLE_MEMBER Sphere(const Sphere &sphere)
 	{
 		this->center = sphere.center;
 		this->radius = sphere.radius;
 		this->radius2 = sphere.radius2;
-		this->color = sphere.color;
+		this->material = sphere.material;
 	}
 
 	CUDA_CALLABLE_MEMBER bool Intersect(Ray &ray, float *t0 = NULL)
@@ -45,8 +46,10 @@ public:
 		return normal;
 	}
 
-	CUDA_CALLABLE_MEMBER Vec3 Color() {return color;}
+	//CUDA_CALLABLE_MEMBER Vec3 Color() {return material.color;}
+
+	CUDA_CALLABLE_MEMBER Material GetMaterial() {return material;}
 
 protected:
-	Vec3 color;
+	Material material;
 };

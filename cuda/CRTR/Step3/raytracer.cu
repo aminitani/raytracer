@@ -85,7 +85,7 @@ __global__ void Trace(float *pixels, float INFINITY, Camera camera, Scene *scene
 			}
 		}
 		if (!isInShadow) {
-			pixel.SetColor(sphere->Color() * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->brightness);
+			pixel.SetColor(sphere->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->brightness);
 		}
 		else {
 			pixel.SetColor(Vec3(0));

@@ -193,6 +193,7 @@
     <ClInclude Include="lab.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="graphics\OpenGLWnd.h" />
+    <ClInclude Include="material.h" />
     <ClInclude Include="math\matrix.h" />
     <ClInclude Include="math\ray.h" />
     <ClInclude Include="math\transform.h" />
