@@ -71,6 +71,12 @@ struct Camera
 		}
 
 		CUDA_CALLABLE_MEMBER ~Camera() {}
+
+		CUDA_CALLABLE_MEMBER void Zoom(int distance)
+		{
+			orientation.Translate( orientation.Forward() * distance );
+			centerDistance -= distance;
+		}
 		
 		CUDA_CALLABLE_MEMBER float Fovy() {return fovy;}
 		CUDA_CALLABLE_MEMBER float &ARatio() {return aRatio;}

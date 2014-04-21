@@ -337,6 +337,10 @@ BOOL CChildView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
     //m_camera.MouseWheel(zDelta);
 
+	camera->Zoom( (zDelta > 0) ? 1 : -1 );
+	thread thrd(&CChildView::Render, this);
+	thrd.detach();
+
     return COpenGLWnd::OnMouseWheel(nFlags, zDelta, pt);
 }
 
