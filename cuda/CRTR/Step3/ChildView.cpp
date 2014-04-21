@@ -44,15 +44,13 @@ CChildView::CChildView(int width, int height)
 
 	m_width = width;
 	m_height = height;
-	totThreads = std::thread::hardware_concurrency();
-	//totThreads = (std::thread::hardware_concurrency() > 1) ? std::thread::hardware_concurrency()-1 : 1;
 	pixels = new float[m_width*m_height*4];
 	for(int i = 0; i < m_width * m_height * 4; i++)
 		pixels[i] = 0.0;
 	
-	//camera is placed at (0,0,5) and faces in the negative z direction, looking at origin
-	float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,5.0,1.0};
-	camera = new Camera(Transform(camTrans), 3.1415926 * 55.0 / 180.0, m_width, m_height);
+	//camera is placed at (0,0,10) and faces in the negative z direction, looking at origin
+	float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,10.0,1.0};
+	camera = new Camera(Transform(camTrans), GR_PI * 55.0 / 180.0, m_width, m_height);
 
 	scene = new Scene();
 
@@ -65,6 +63,9 @@ CChildView::CChildView(int width, int height)
 	cudaMalloc((void**)&devPtr, m_width * m_height * sizeof(float) * 4);
 
 	lastFrameTime = std::chrono::high_resolution_clock::now();
+
+	tTAngle = 0;
+	tTTimer = 0;
 	
 	BuildFont();
 }
@@ -95,6 +96,9 @@ BEGIN_MESSAGE_MAP(CChildView,COpenGLWnd )
     ON_WM_RBUTTONDOWN()
     ON_WM_MOUSEWHEEL()
 	ON_COMMAND(ID_RENDER_START, &CChildView::OnRenderStart)
+	ON_COMMAND(ID_RENDER_TURNTABLE, &CChildView::OnRenderTurntable)
+	ON_WM_TIMER()
+	ON_UPDATE_COMMAND_UI(ID_RENDER_TURNTABLE, &CChildView::OnUpdateRenderTurntable)
 END_MESSAGE_MAP()
 
 
@@ -248,7 +252,7 @@ void CChildView::TurnTable()
 	//camera.orientation.up = right cross forward;
 }
 
-void CChildView::Render(int totThreads)
+void CChildView::Render()
 {
 	if(readyToRender)
 	{
@@ -265,7 +269,7 @@ void CChildView::Render(int totThreads)
 
 		if(pendingRending)
 		{
-			thread thrd(&CChildView::Render, this, totThreads);
+			thread thrd(&CChildView::Render, this);
 			thrd.detach();
 			pendingRending = false;
 		}
@@ -302,7 +306,19 @@ void CChildView::OnMouseMove(UINT nFlags, CPoint point)
 
 		camera->orientation.Translate( camera->orientation.Left() * ( (point.x - mousePos.x) / (float)wid ) );
 		camera->orientation.Translate( camera->orientation.Up() * ( (point.y - mousePos.y) / (float)hit ) );
-		thread thrd(&CChildView::Render, this, totThreads);
+		thread thrd(&CChildView::Render, this);
+		thrd.detach();
+	}
+	
+	else if(nFlags & MK_RBUTTON)
+	{
+		int wid, hit;
+		GetSize(wid, hit);
+
+		camera->orientation.RotateOnYAroundPoint(90 * ( (point.x - mousePos.x) / (float)wid ), camera->Center());
+		//if we want to add y rotation, we need to add the ability to make a transformation matrix
+		//for rotation around a given axis (a vector rather than x, y, z)
+		thread thrd(&CChildView::Render, this);
 		thrd.detach();
 	}
 
@@ -343,8 +359,57 @@ void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 void CChildView::OnRenderStart()
 {
 	//GetSize(m_width, m_height);I break code :)
-	//Render((totThreads > 1) ? totThreads-1 : 1);
-	thread thrd(&CChildView::Render, this, totThreads);
+	thread thrd(&CChildView::Render, this);
 	thrd.detach();
 }
 
+
+
+void CChildView::OnRenderTurntable()
+{
+    if(tTTimer == 0)
+    {
+        // Create the timer
+        tTTimer = SetTimer(1, 30, NULL);
+    }
+    else
+    {
+        // Destroy the timer
+        KillTimer(tTTimer);
+        tTTimer = 0;
+    }
+}
+
+
+void CChildView::OnTimer(UINT_PTR nIDEvent)
+{
+	float deltangle = 1;
+	tTAngle = fmodf(tTAngle + deltangle, 360.0);
+	//for scene turntable
+	for(int i = 0; i < scene->numSpheres; i++)
+	{
+		Transform::TransformVec3(scene->spheres[i].center, Transform::RotationOnYAroundOrigin(deltangle));
+	}
+
+	//for camera turntable
+	//camera->orientation.RotateOnYAroundPoint(deltangle, camera->Center());
+	
+	//this was dumb...
+	//basically trying to do a 'lookat' function, which was unnecessary
+	//also doesn't work as-is
+	//camera->orientation.SetForward( (camera->Center() - camera->orientation.Pos()).normalize() );
+	//camera->orientation.SetLeft( ( Vec3(-cos( (tTAngle)*GR_PI/180.0 ), 0, sin( (tTAngle)*GR_PI/180.0 )) ).normalize() );
+	//camera->orientation.SetUp( camera->orientation.Forward().cross(camera->orientation.Left()).normalize() );
+
+	thread thrd(&CChildView::Render, this);
+	thrd.detach();
+	
+
+	COpenGLWnd::OnTimer(nIDEvent);
+}
+
+
+void CChildView::OnUpdateRenderTurntable(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(tTTimer != 0);
+}

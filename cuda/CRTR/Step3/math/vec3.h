@@ -9,6 +9,8 @@
 #define CUDA_CALLABLE_MEMBER
 #endif
 
+const double GR_PI = 3.1415926535897932384626433832795;
+
 struct Vec3
 {
 public:

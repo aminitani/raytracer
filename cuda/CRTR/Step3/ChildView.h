@@ -72,8 +72,6 @@ private:
 	int m_width;
 	int m_height;
 
-	unsigned totThreads;
-
 	bool readyToRender;
 	bool pendingRending;//if you ask to render while it's rendering, make note so we render again after finished (there may be no other stimulus to render since we ignore requests while rendering
 
@@ -81,14 +79,20 @@ private:
 
 	std::chrono::high_resolution_clock::time_point lastFrameTime;
 	GLuint  base;
+
+	float tTAngle;//angle of the turntable spin
+	UINT_PTR tTTimer;//timer
 	
 	GLvoid BuildFont(GLvoid);
 	GLvoid KillFont(GLvoid);
 	GLvoid GLPrint(const char *fmt, ...);
-	void Render(int numThreads);
+	void Render();
 	void TurnTable();
 public:
 	afx_msg void OnRenderStart();
+	afx_msg void OnRenderTurntable();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnUpdateRenderTurntable(CCmdUI *pCmdUI);
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -7,6 +7,8 @@
 
 using std::ostream;
 using std::endl;
+using std::cosf;
+using std::sinf;
 
 #ifdef __CUDACC__
 #define CUDA_CALLABLE_MEMBER __host__ __device__
@@ -86,22 +88,50 @@ struct Transform
 		
 		CUDA_CALLABLE_MEMBER const Vec3 Forward()
 		{
-			return Vec3((*this).GetIndex(0, 2), (*this).GetIndex(1, 2), (*this).GetIndex(2, 2));
+			return Vec3((*this).GetIndex(2, 0), (*this).GetIndex(2, 1), (*this).GetIndex(2, 2));
+		}
+		
+		CUDA_CALLABLE_MEMBER void SetForward(Vec3 in)
+		{
+			contents[2][0] = in.x;
+			contents[2][1] = in.y;
+			contents[2][2] = in.z;
 		}
 		
 		CUDA_CALLABLE_MEMBER const Vec3 Left()
 		{
-			return Vec3((*this).GetIndex(0, 0), (*this).GetIndex(1, 0), (*this).GetIndex(2, 0));
+			return Vec3((*this).GetIndex(0, 0), (*this).GetIndex(0, 1), (*this).GetIndex(0, 2));
+		}
+		
+		CUDA_CALLABLE_MEMBER void SetLeft(Vec3 in)
+		{
+			contents[0][0] = in.x;
+			contents[0][1] = in.y;
+			contents[0][2] = in.z;
 		}
 		
 		CUDA_CALLABLE_MEMBER const Vec3 Up()
 		{
-			return Vec3((*this).GetIndex(0, 1), (*this).GetIndex(1, 1), (*this).GetIndex(2, 1));
+			return Vec3((*this).GetIndex(1, 0), (*this).GetIndex(1, 1), (*this).GetIndex(1, 2));
+		}
+		
+		CUDA_CALLABLE_MEMBER void SetUp(Vec3 in)
+		{
+			contents[1][0] = in.x;
+			contents[1][1] = in.y;
+			contents[1][2] = in.z;
 		}
 		
 		CUDA_CALLABLE_MEMBER const Vec3 Pos()
 		{
 			return Vec3((*this).GetIndex(3, 0), (*this).GetIndex(3, 1), (*this).GetIndex(3, 2));
+		}
+		
+		CUDA_CALLABLE_MEMBER void SetPos(Vec3 in)
+		{
+			contents[3][0] = in.x;
+			contents[3][1] = in.y;
+			contents[3][2] = in.z;
 		}
 
 		CUDA_CALLABLE_MEMBER void Translate(Vec3 vec)
@@ -110,7 +140,128 @@ struct Transform
 			contents[3][1] += vec.y;
 			contents[3][2] += vec.z;
 		}
+
+		CUDA_CALLABLE_MEMBER void RotateOnXAroundSelf(float deg)
+		{
+			Vec3 pos = Pos();
+			Translate(pos * -1);
+
+			Transform transformation = Transform();
+			transformation(1, 1) = cos(deg * GR_PI / 180.0);
+			transformation(1, 2) = sin(deg * GR_PI / 180.0);
+			transformation(2, 1) = -sin(deg * GR_PI / 180.0);
+			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+
+			(*this) *= transformation;
+
+			Translate(pos);
+		}
+
+		CUDA_CALLABLE_MEMBER void RotateOnYAroundSelf(float deg)
+		{
+			Vec3 pos = Pos();
+			Translate(pos * -1);
+
+			Transform transformation = Transform();
+			transformation(0, 0) = cos(deg * GR_PI / 180.0);
+			transformation(0, 2) = -sin(deg * GR_PI / 180.0);
+			transformation(2, 0) = sin(deg * GR_PI / 180.0);
+			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+
+			(*this) *= transformation;
+
+			Translate(pos);
+		}
+
+		CUDA_CALLABLE_MEMBER void RotateOnZAroundSelf(float deg)
+		{
+			Vec3 pos = Pos();
+			Translate(pos * -1);
+
+			Transform transformation = Transform();
+			transformation(0, 0) = cos(deg * GR_PI / 180.0);
+			transformation(0, 1) = sin(deg * GR_PI / 180.0);
+			transformation(1, 0) = -sin(deg * GR_PI / 180.0);
+			transformation(1, 1) = cos(deg * GR_PI / 180.0);
+
+			(*this) *= transformation;
+
+			Translate(pos);
+		}
+
+		CUDA_CALLABLE_MEMBER void RotateOnXAroundPoint(float deg, Vec3 point = Vec3())
+		{
+			Translate(point * -1);
+
+			Transform transformation = Transform();
+			transformation(1, 1) = cos(deg * GR_PI / 180.0);
+			transformation(1, 2) = sin(deg * GR_PI / 180.0);
+			transformation(2, 1) = -sin(deg * GR_PI / 180.0);
+			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+
+			(*this) *= transformation;
+
+			Translate(point);
+		}
+
+		CUDA_CALLABLE_MEMBER void RotateOnYAroundPoint(float deg, Vec3 point = Vec3())
+		{
+			Translate(point * -1);
+
+			Transform transformation = Transform();
+			transformation(0, 0) = cos(deg * GR_PI / 180.0);
+			transformation(0, 2) = -sin(deg * GR_PI / 180.0);
+			transformation(2, 0) = sin(deg * GR_PI / 180.0);
+			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+
+			(*this) *= transformation;
+
+			Translate(point);
+		}
+
+		CUDA_CALLABLE_MEMBER void RotateOnZAroundPoint(float deg, Vec3 point = Vec3())
+		{
+			Translate(point * -1);
+
+			Transform transformation = Transform();
+			transformation(0, 0) = cos(deg * GR_PI / 180.0);
+			transformation(0, 1) = sin(deg * GR_PI / 180.0);
+			transformation(1, 0) = -sin(deg * GR_PI / 180.0);
+			transformation(1, 1) = cos(deg * GR_PI / 180.0);
+
+			(*this) *= transformation;
+
+			Translate(point);
+		}
 		
+		CUDA_CALLABLE_MEMBER static void TransformVec3(Vec3 &vec, Transform trans)
+		{
+			Vec3 original(vec);
+			vec.x = original.x*trans.GetIndex(0,0) +
+				original.y*trans.GetIndex(1,0) +
+				original.z*trans.GetIndex(2,0) +
+				trans.GetIndex(3,0);
+			vec.y = original.x*trans.GetIndex(0,1) +
+				original.y*trans.GetIndex(1,1) +
+				original.z*trans.GetIndex(2,1) +
+				trans.GetIndex(3,1);
+			vec.z = original.x*trans.GetIndex(0,2) +
+				original.y*trans.GetIndex(1,2) +
+				original.z*trans.GetIndex(2,2) +
+				trans.GetIndex(3,2);
+		}
+		
+		CUDA_CALLABLE_MEMBER static Transform RotationOnYAroundOrigin(float deg)
+		{
+			Transform transformation = Transform();
+			transformation(0, 0) = cos(deg * GR_PI / 180.0);
+			transformation(0, 2) = -sin(deg * GR_PI / 180.0);
+			transformation(2, 0) = sin(deg * GR_PI / 180.0);
+			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+
+			return transformation;
+		}
+
 		CUDA_CALLABLE_MEMBER Transform& operator=(const Transform& other)
 		{
 			if(this == &other)
@@ -126,28 +277,47 @@ struct Transform
 			return *this;
 		}
 		
-		// Transform& operator*=(const Transform& other) // compound assignment
-		// {
-			// Transform output;
-			// for(int row = 0; row < 4; row++)
-			// {
-				// for(int col = 0; col < 4; col++)
-				// {
-					// float sum;
-					// for(int k = 0; k < (*this).GetCols(); k++)
-					// {
-						// sum = sum + (*this).GetIndex(row, k) * other.GetIndex(k, col);
-					// }
-					// output(row,col) = sum;
-				// }
-			// }
+		 Transform& operator*=(const Transform& other) // compound assignment
+		 {
+			 Transform output;
+			 for(int row = 0; row < 4; row++)
+			 {
+				 for(int col = 0; col < 4; col++)
+				 {
+					 float sum = 0;
+					 for(int k = 0; k < (*this).GetCols(); k++)
+					 {
+						 sum = sum + (*this).GetIndex(row, k) * other.GetIndex(k, col);
+					 }
+					 output(row,col) = sum;
+				 }
+			 }
 
-			// (*this) = output;
-			// return *this; // return the result by reference
-		// }
+			 (*this) = output;
+			 return *this; // return the result by reference
+		 }
+		
+		 Transform& operator*(const Transform& other) // compound assignment
+		 {
+			 Transform output;
+			 for(int row = 0; row < 4; row++)
+			 {
+				 for(int col = 0; col < 4; col++)
+				 {
+					 float sum = 0;
+					 for(int k = 0; k < (*this).GetCols(); k++)
+					 {
+						 sum = sum + (*this).GetIndex(row, k) * other.GetIndex(k, col);
+					 }
+					 output(row,col) = sum;
+				 }
+			 }
+
+			 return output; // return the result by reference
+		 }
 };
 
-ostream& operator<<(ostream& Out, const Transform& Item);
+//ostream& operator<<(ostream& Out, const Transform& Item);
 
 // inline Transform operator*(Transform a, const Transform& b)
 // {

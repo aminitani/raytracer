@@ -21,13 +21,14 @@ struct Scene
 	CUDA_CALLABLE_MEMBER Scene()
 	{
 		//casting to type * is bad in c, but c++ compiler needs it, sadface
-		numSpheres = 1;
+		numSpheres = 3;
 		spheres = (Sphere *) malloc (numSpheres * sizeof(Sphere));
-		spheres[0] = Sphere(Vec3(1.0,1.0,-1.0), 3.0, Vec3(0.5,0.0,0.0));
-		//spheres[0] = Sphere(Vec3(2, 1, -1), 3.0, Vec3(1, 0, 1));
-		//spheres[1] = Sphere(Vec3(-1, -1, 1), 2.0, Vec3(1, 1, 0));
+		//spheres[0] = Sphere(Vec3(1.0,1.0,-1.0), 3.0, Vec3(0.5,0.0,0.0));
+		spheres[0] = Sphere(Vec3(3, 1, -2), 3.0, Vec3(1, 0, 1));
+		spheres[1] = Sphere(Vec3(-2, -1, 2), 2.0, Vec3(1, 1, 0));
+		spheres[2] = Sphere(Vec3(0, -10005, 0), 10000, Vec3(0, 1, 1));
 
-		light = new Light(Vec3(-3.0,3.0,3.0), 0.8);
+		light = new Light(Vec3(-30.0,30.0,30.0), 0.8);
 	}
 
 	CUDA_CALLABLE_MEMBER Scene(const Scene &scene)
@@ -59,23 +60,4 @@ struct Scene
 		numSpheres = 0;
 	}
 #endif
-
-//	CUDA_CALLABLE_MEMBER Scene Devicify()
-//	{
-//		//unnecessary work; mallocing, then cudamallocing :/
-//		Scene ret(*this);
-//		
-//		//TODO: right here, replace the pointer to spheres and the pointer to light
-//		//in the scene variable with newly allocated device pointers before passing
-//		//the scene to the device in the trace call
-//		Sphere *dSpheres;
-//		CudaMalloc((void**) &(dSpheres), sizeof(Sphere)*scene.numSpheres);
-//		CudaMemcpy(dSpheres, scene.spheres, sizeof(Sphere)*scene.numSpheres, cudaMemcpyHostToDevice);
-//		scene.spheres = dSpheres;
-//		
-//		Light *dLight;
-//		CudaMalloc((void**) &(dLight), sizeof(Light));
-//		CudaMemcpy(dLight, scene.light, sizeof(Light), cudaMemcpyHostToDevice);
-//		scene.light = dLight;
-//	}
 };
