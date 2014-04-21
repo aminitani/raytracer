@@ -35,7 +35,7 @@ struct Camera
 		float vpd;//view plane distance, not significant, assume 1
 		int m_width;
 		int m_height;
-		Vec3 center/*, eye is orientation.Pos()*/;
+		float centerDistance/*, eye is orientation.Pos()*/;
 	
 	public:
 		Transform orientation;
@@ -46,7 +46,7 @@ struct Camera
 			// orientation.Identify();
 		// }
 		
-		CUDA_CALLABLE_MEMBER Camera(Transform inTransform, float inFovy, int width, int height, Vec3 inCenter = Vec3())
+		CUDA_CALLABLE_MEMBER Camera(Transform inTransform, float inFovy, int width, int height)
 		{
 			orientation = inTransform;
 			fovy = inFovy;
@@ -55,7 +55,7 @@ struct Camera
 			aRatio = (float)m_width/(float)m_height;
 			vpd = 1;
 			viewPlane = ViewPlane(fovy, vpd, aRatio, orientation);
-			center = inCenter;
+			centerDistance = /*(Vec3() - */orientation.Pos()/*)*/.length();
 		}
 
 		CUDA_CALLABLE_MEMBER Camera(const Camera &camera)
@@ -67,7 +67,7 @@ struct Camera
 			this->m_width = camera.m_width;
 			this->m_height = camera.m_height;
 			this->viewPlane = ViewPlane(fovy, vpd, aRatio, orientation);
-			this->center = camera.center;
+			this->centerDistance = camera.centerDistance;
 		}
 
 		CUDA_CALLABLE_MEMBER ~Camera() {}
@@ -77,6 +77,6 @@ struct Camera
 		CUDA_CALLABLE_MEMBER float VPD() {return vpd;}
 		CUDA_CALLABLE_MEMBER int Width() {return m_width;}
 		CUDA_CALLABLE_MEMBER int Height() {return m_height;}
-		CUDA_CALLABLE_MEMBER Vec3 Center() {return center;}
+		CUDA_CALLABLE_MEMBER Vec3 Center() {return orientation.Pos() + orientation.Forward() * centerDistance;}
 		CUDA_CALLABLE_MEMBER ViewPlane GetViewPlane() {return viewPlane;}
 };

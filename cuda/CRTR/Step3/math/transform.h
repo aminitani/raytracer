@@ -46,6 +46,17 @@ struct Transform
 			}
 		}
 		
+		//I demand an array of 16 floats organized row-major!
+		CUDA_CALLABLE_MEMBER static Transform TransformFromPos(Vec3 inPos)
+		{
+			Transform trans = Transform();
+			trans(3, 0) = inPos.x;
+			trans(3, 1) = inPos.y;
+			trans(3, 2) = inPos.z;
+
+			return trans;
+		}
+		
 		//not tested
 		CUDA_CALLABLE_MEMBER Transform(const Transform &other)
 		{
@@ -143,14 +154,16 @@ struct Transform
 
 		CUDA_CALLABLE_MEMBER void RotateOnXAroundSelf(float deg)
 		{
+			deg = deg * GR_PI / 180.0;
+
 			Vec3 pos = Pos();
 			Translate(pos * -1);
 
 			Transform transformation = Transform();
-			transformation(1, 1) = cos(deg * GR_PI / 180.0);
-			transformation(1, 2) = sin(deg * GR_PI / 180.0);
-			transformation(2, 1) = -sin(deg * GR_PI / 180.0);
-			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+			transformation(1, 1) = cos(deg);
+			transformation(1, 2) = sin(deg);
+			transformation(2, 1) = -sin(deg);
+			transformation(2, 2) = cos(deg);
 
 			(*this) *= transformation;
 
@@ -159,14 +172,16 @@ struct Transform
 
 		CUDA_CALLABLE_MEMBER void RotateOnYAroundSelf(float deg)
 		{
+			deg = deg * GR_PI / 180.0;
+
 			Vec3 pos = Pos();
 			Translate(pos * -1);
 
 			Transform transformation = Transform();
-			transformation(0, 0) = cos(deg * GR_PI / 180.0);
-			transformation(0, 2) = -sin(deg * GR_PI / 180.0);
-			transformation(2, 0) = sin(deg * GR_PI / 180.0);
-			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+			transformation(0, 0) = cos(deg);
+			transformation(0, 2) = -sin(deg);
+			transformation(2, 0) = sin(deg);
+			transformation(2, 2) = cos(deg);
 
 			(*this) *= transformation;
 
@@ -175,14 +190,16 @@ struct Transform
 
 		CUDA_CALLABLE_MEMBER void RotateOnZAroundSelf(float deg)
 		{
+			deg = deg * GR_PI / 180.0;
+
 			Vec3 pos = Pos();
 			Translate(pos * -1);
 
 			Transform transformation = Transform();
-			transformation(0, 0) = cos(deg * GR_PI / 180.0);
-			transformation(0, 1) = sin(deg * GR_PI / 180.0);
-			transformation(1, 0) = -sin(deg * GR_PI / 180.0);
-			transformation(1, 1) = cos(deg * GR_PI / 180.0);
+			transformation(0, 0) = cos(deg);
+			transformation(0, 1) = sin(deg);
+			transformation(1, 0) = -sin(deg);
+			transformation(1, 1) = cos(deg);
 
 			(*this) *= transformation;
 
@@ -191,13 +208,15 @@ struct Transform
 
 		CUDA_CALLABLE_MEMBER void RotateOnXAroundPoint(float deg, Vec3 point = Vec3())
 		{
+			deg = deg * GR_PI / 180.0;
+
 			Translate(point * -1);
 
 			Transform transformation = Transform();
-			transformation(1, 1) = cos(deg * GR_PI / 180.0);
-			transformation(1, 2) = sin(deg * GR_PI / 180.0);
-			transformation(2, 1) = -sin(deg * GR_PI / 180.0);
-			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+			transformation(1, 1) = cos(deg);
+			transformation(1, 2) = sin(deg);
+			transformation(2, 1) = -sin(deg);
+			transformation(2, 2) = cos(deg);
 
 			(*this) *= transformation;
 
@@ -206,13 +225,15 @@ struct Transform
 
 		CUDA_CALLABLE_MEMBER void RotateOnYAroundPoint(float deg, Vec3 point = Vec3())
 		{
+			deg = deg * GR_PI / 180.0;
+
 			Translate(point * -1);
 
 			Transform transformation = Transform();
-			transformation(0, 0) = cos(deg * GR_PI / 180.0);
-			transformation(0, 2) = -sin(deg * GR_PI / 180.0);
-			transformation(2, 0) = sin(deg * GR_PI / 180.0);
-			transformation(2, 2) = cos(deg * GR_PI / 180.0);
+			transformation(0, 0) = cos(deg);
+			transformation(0, 2) = -sin(deg);
+			transformation(2, 0) = sin(deg);
+			transformation(2, 2) = cos(deg);
 
 			(*this) *= transformation;
 
@@ -221,17 +242,85 @@ struct Transform
 
 		CUDA_CALLABLE_MEMBER void RotateOnZAroundPoint(float deg, Vec3 point = Vec3())
 		{
+			deg = deg * GR_PI / 180.0;
+
 			Translate(point * -1);
 
 			Transform transformation = Transform();
-			transformation(0, 0) = cos(deg * GR_PI / 180.0);
-			transformation(0, 1) = sin(deg * GR_PI / 180.0);
-			transformation(1, 0) = -sin(deg * GR_PI / 180.0);
-			transformation(1, 1) = cos(deg * GR_PI / 180.0);
+			transformation(0, 0) = cos(deg);
+			transformation(0, 1) = sin(deg);
+			transformation(1, 0) = -sin(deg);
+			transformation(1, 1) = cos(deg);
 
 			(*this) *= transformation;
 
 			Translate(point);
+		}
+
+		CUDA_CALLABLE_MEMBER void RotateOnAxisAroundSelf(float deg, Vec3 axis)
+		{
+			deg = deg * GR_PI / 180.0;
+
+			Vec3 pos = Pos();
+			Translate(pos * -1);
+
+			float c = cos(deg);
+			float s = sin(deg);
+			float t = 1 - c;
+
+			float x = axis.x;
+			float y = axis.y;
+			float z = axis.z;
+			
+			float trans[16] = {
+				t*x*x+c,t*x*y+s*z,t*x*z-s*y,0.0,
+				t*x*y-s*z,t*y*y+c,t*y*z+s*x,0.0,
+				t*x*z+s*y,t*y*z-s*x,t*z*z+c,0.0,
+				0.0,0.0,0.0,1.0};
+			Transform transformation = Transform(trans);
+
+			(*this) *= transformation;
+
+			Translate(pos);
+		}
+
+		CUDA_CALLABLE_MEMBER void RotateOnAxisAroundPoint(float deg, Vec3 axis, Vec3 point = Vec3())
+		{
+			deg = deg * GR_PI / 180.0;
+			
+			Translate(point * -1);
+
+			float c = cos(deg);
+			float s = sin(deg);
+			float t = 1 - c;
+
+			float x = axis.x;
+			float y = axis.y;
+			float z = axis.z;
+			
+			float trans[16] = {
+				t*x*x+c,t*x*y-s*z,t*x*z+s*y,0.0,
+				t*x*y+s*z,t*y*y+c,t*y*z-s*x,0.0,
+				t*x*z-s*y,t*y*z+s*x,t*z*z+c,0.0,
+				0.0,0.0,0.0,1.0};
+			Transform transformation = Transform(trans);
+
+			(*this) *= transformation;
+
+			Translate(point);
+		}
+		
+		CUDA_CALLABLE_MEMBER static Transform RotationOnYAroundOrigin(float deg)
+		{
+			deg = deg * GR_PI / 180.0;
+
+			Transform transformation = Transform();
+			transformation(0, 0) = cos(deg);
+			transformation(0, 2) = -sin(deg);
+			transformation(2, 0) = sin(deg);
+			transformation(2, 2) = cos(deg);
+
+			return transformation;
 		}
 		
 		CUDA_CALLABLE_MEMBER static void TransformVec3(Vec3 &vec, Transform trans)
@@ -249,17 +338,6 @@ struct Transform
 				original.y*trans.GetIndex(1,2) +
 				original.z*trans.GetIndex(2,2) +
 				trans.GetIndex(3,2);
-		}
-		
-		CUDA_CALLABLE_MEMBER static Transform RotationOnYAroundOrigin(float deg)
-		{
-			Transform transformation = Transform();
-			transformation(0, 0) = cos(deg * GR_PI / 180.0);
-			transformation(0, 2) = -sin(deg * GR_PI / 180.0);
-			transformation(2, 0) = sin(deg * GR_PI / 180.0);
-			transformation(2, 2) = cos(deg * GR_PI / 180.0);
-
-			return transformation;
 		}
 
 		CUDA_CALLABLE_MEMBER Transform& operator=(const Transform& other)
