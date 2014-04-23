@@ -116,6 +116,10 @@ BEGIN
         MENUITEM "Start",                       ID_RENDER_START
         MENUITEM "Turntable",                   ID_RENDER_TURNTABLE
     END
+    POPUP "Compute Device"
+    BEGIN
+        MENUITEM "GPU Acceleration",            ID_COMPUTEDEVICE_GPU
+    END
 END
 
 

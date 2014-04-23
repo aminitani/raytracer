@@ -13,7 +13,7 @@
 #include "graphics/OpenGLWnd.h"
 #include "graphics/GrTexture.h"	// Added by ClassView
 #include "Mesh.h"
-//#include "raytracer.h"
+#include "raytracer.h"
 #include "scene.h"
 #include "assets\camera.h"
 
@@ -65,7 +65,7 @@ private:
 	
 	float *devPtr;
 	float *pixels;
-	//Raytracer *raytracer;
+	Raytracer *raytracer;
 	Scene *scene;
 	Camera *camera;
 	
@@ -80,6 +80,8 @@ private:
 	std::chrono::high_resolution_clock::time_point lastFrameTime;
 	GLuint  base;
 
+	bool useGPU;
+
 	float tTAngle;//angle of the turntable spin
 	UINT_PTR tTTimer;//timer
 	
@@ -93,6 +95,8 @@ public:
 	afx_msg void OnRenderTurntable();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnUpdateRenderTurntable(CCmdUI *pCmdUI);
+	afx_msg void OnComputedeviceGpu();
+	afx_msg void OnUpdateComputedeviceGpu(CCmdUI *pCmdUI);
 };
 
 /////////////////////////////////////////////////////////////////////////////

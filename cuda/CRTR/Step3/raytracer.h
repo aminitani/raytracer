@@ -14,12 +14,14 @@
 #include "./assets/triangle.h"
 #include "./assets/light.h"
 #include "./math/ray.h"
+#include "scene.h"
 
 using std::cout; using std::endl;
 using std::vector;
 using std::thread;
 
-#define CollisionError 0.05
+#define COLLISIONERROR .0001
+#define MAXBOUNCES 5
 
 class Raytracer
 {
@@ -27,10 +29,13 @@ class Raytracer
 		float INFINITY;
 		Image *image;
 		Camera *camera;//note that there are two cameras; childview's updates constantly, while this gets 'snapshots' every rendered frame
-		vector<Object *> objects;
+		vector<Sphere *> objects;
+		Scene *scene;
 		Light *light;
 		float *pixels;//the pixel buffer shared between the childview and this raytracer
 		float *localPixels;//write to this, then push into pixels when the whole image is done
+
+		unsigned int m_width, m_height;
 
 		Vec3 defaultColor;
 		Vec3 BLACK;
@@ -40,16 +45,26 @@ class Raytracer
 		std::chrono::high_resolution_clock::time_point bufferCopied;
 
 		void ConstructScene() {
-			light = new Light(Vec3(-3.0,3.0,3.0), 0.8);
-			Sphere *sphere = new Sphere(Vec3(1.0,1.0,-1.0), 3.0, Vec3(0.5,0.0,0.0));
-			objects.push_back(sphere);
+			
+			/*objects.push_back( new Sphere(Vec3(0, -10004, 0), 10000, Material(0, .2, 1.5, Vec3(.6))));
+			objects.push_back( new Sphere(Vec3(0, 0, 0), 4, Material(.5, 1, 1.5, Vec3(1.00, 0.32, 0.36))));
+			objects.push_back( new Sphere(Vec3(5, -1, 5), 2, Material(0, 1, 1.5, Vec3(0.90, 0.76, 0.46))));
+			objects.push_back( new Sphere(Vec3(5, 0, -5), 3, Material(0, 1, 1.5, Vec3(0.65, 0.77, 0.97))));
+			objects.push_back( new Sphere(Vec3(-5.5, 0, 5), 3, Material(0, 1, 1.5, Vec3(0.90, 0.90, 0.90))));
+
+			light = new Light(Vec3(0, 20, -30), 0.8);
+			scene = new Scene();
+			scene->spheres = objects.front();
+			scene->numSpheres = 5;
+			scene->light = light;*/
 		}
 	
 	public:
 		Raytracer(int width, int height, float *inPixels, Camera inCamera)
 		{
 			INFINITY = std::numeric_limits<float>::infinity();
-			image = new Image(width, height, "test.png");
+			//image = new Image(width, height, "test.png");
+			m_width = width; m_height = height;
 			camera = new Camera(Transform(), 0, 0, 0);
 			*camera = inCamera;
 
@@ -59,6 +74,7 @@ class Raytracer
 
 			defaultColor = Vec3(0.3);
 			BLACK = Vec3(0.0);
+			scene = new Scene();
 		}
 		
 		~Raytracer()
@@ -69,7 +85,7 @@ class Raytracer
 			delete camera;
 			camera = NULL;
 			
-			for(Object *obj : objects)
+			for(Sphere *obj : objects)
 			{
 				delete obj;
 				obj = NULL;
@@ -154,26 +170,153 @@ class Raytracer
 //			pixels[((image->Height()-1-j)*image->Width() + i)*4+2] = pixel.b;
 //			pixels[((image->Height()-1-j)*image->Width() + i)*4+3] = pixel.a;
 //		}
+
+		void ComputePrimaryRay(unsigned x, unsigned y, unsigned width, unsigned height, Ray *primaryRay, Camera *camera)
+		{
+			primaryRay->Point() = camera->orientation.Pos();
+			Vec3 target =
+			camera->GetViewPlane().ULCorner - camera->orientation.Left() * ( ((x+.5) / width) * 2*camera->GetViewPlane().hor )
+			- camera->orientation.Up() * ( ((y+.5) / height) * 2*camera->GetViewPlane().vert );
+			primaryRay->Direction() = (target - camera->orientation.Pos()).normalize();
+		}
+
+		void SaturateColor(Vec3 &color)
+		{
+			if(color.x > 1)
+				color.x = 1;
+			if(color.y > 1)
+				color.y = 1;
+			if(color.z > 1)
+				color.z = 1;
+		}
+
+		float mix(const float &a, const float  &b, const float &mix)
+		{
+			return b * mix + a * (1.0 - mix);
+		}
+
+		Vec3 Trace(Ray &ray, int depth)
+		{
+			float minDist = INFINITY;
+			Sphere *sphere = NULL;
+			for (unsigned k = 0; k < scene->numSpheres; ++k) {
+				float t0 = INFINITY;
+				if ((scene->spheres[k]).Intersect(ray, &t0)) {
+					if (t0 < minDist) {
+						sphere = &(scene->spheres[k]);
+						minDist = t0; // update min distance
+					}
+				}
+			}
+			if (sphere != NULL) {
+				Vec3 surfaceColor = Vec3();
+
+				// compute phit and nhit
+				Vec3 pHit = ray.Point() + ray.Direction() * minDist; // point of intersection
+				Vec3 nHit = sphere->Normal(pHit);
+
+				// compute illumination
+				bool inside = false;
+				if(ray.Direction().dot(nHit) > 0)
+				{
+					nHit = nHit * -1;
+					inside = true;
+				}
+
+				if ((sphere->GetMaterial().transparency > 0 || sphere->GetMaterial().reflection > 0) && depth < MAXBOUNCES)
+				{
+					float facingRatio = -ray.Direction().dot(nHit);
+					float fresnelEffect = mix(pow(1 - facingRatio, 3), 1, 0.1);
+
+					Vec3 reflectionDirection = ray.Direction() - nHit * 2 * ray.Direction().dot(nHit);
+					reflectionDirection.normalize();
+
+					Vec3 reflection = Trace( Ray(pHit + nHit * COLLISIONERROR, reflectionDirection), depth + 1 );
+					Vec3 refraction = Vec3(0);
+
+			
+					if (sphere->GetMaterial().transparency > 0) {
+						float eta = (inside) ? sphere->GetMaterial().IOR : 1 / sphere->GetMaterial().IOR; // are we inside or outside the surface?
+						float cosi = -nHit.dot(ray.Direction());
+						float k = 1 - eta * eta * (1 - cosi * cosi);
+						Vec3 refractionDirection = ray.Direction() * eta + nHit * (eta *  cosi - sqrt(k));
+						refractionDirection.normalize();
+						refraction = Trace( Ray(pHit - nHit * COLLISIONERROR, refractionDirection), depth + 1 );
+					}
+					// the result is a mix of reflection and refraction (if the sphere is transparent)
+					surfaceColor = (reflection * fresnelEffect + 
+						refraction * (1 - fresnelEffect) * sphere->GetMaterial().transparency) * sphere->GetMaterial().color;
+				}
+				else//diffuse, just get the color now
+				{
+					Ray shadowRay;
+					shadowRay.Point() = pHit;
+					shadowRay.Direction() = (scene->light->position - pHit/*(pHit + COLLISIONERROR * nhit)*/).normalize();
+					bool isInShadow = false;
+					for (unsigned k = 0; k < scene->numSpheres; ++k) {
+						float t0 = INFINITY;
+						if ((scene->spheres[k]).Intersect(shadowRay, &t0)) {
+							isInShadow = true;
+							break;
+						}
+					}
+					if (!isInShadow) {
+						surfaceColor = sphere->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->Brightness( (scene->light->position - pHit).length() );
+						SaturateColor(surfaceColor);
+					}
+					else {
+						surfaceColor = Vec3(0);
+					}
+				}
+
+				return surfaceColor;
+			}
+			else
+				return Vec3(1.0);
+		}
+
+		void Thrender(unsigned int start, unsigned int end)
+		{
+			//unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+			//unsigned int j = camera.Height() - 1 - (blockIdx.y * blockDim.y + threadIdx.y);
+
+			for(int i = start; i < end; i++) {
+				for(int j = 0; j < m_height; j++) {
+					Pixel pixel(0.8f, 0.8f, 0.8f, 0.5f);
+
+					// compute primary ray direction
+					Ray primaryRay;
+					ComputePrimaryRay(i, j, camera->Width(), camera->Height(), &primaryRay, camera);
+	
+					pixel.SetColor(Trace(primaryRay, 0));
+
+					pixels[((m_height-1-j)*m_width + i)*4+0] = pixel.r;
+					pixels[((m_height-1-j)*m_width + i)*4+1] = pixel.g;
+					pixels[((m_height-1-j)*m_width + i)*4+2] = pixel.b;
+					pixels[((m_height-1-j)*m_width + i)*4+3] = pixel.a;
+				}
+			}
+		}
 		
-		void Render(int numThreads, Camera newCam)
+		void Render(int numThreads, Scene scene, Camera newCam)
 		{
 			*camera = newCam;
-
+			*this->scene = scene;
 			start = std::chrono::high_resolution_clock::now();
 			
-			//vector<thread> threads;
-			//for(int i = 0; i < numThreads; i++)
-			//{
-			//	unsigned start = i * image->Width() / numThreads;
-			//	unsigned end;
-			//	if(i == numThreads-1)
-			//		end = image->Width();
-			//	else
-			//		end = start + image->Width() / numThreads;
-			//	threads.push_back(thread(&Raytracer::Thrender, this, start, end, vp));
-			//}
-			//for(auto &thread : threads)
-			//	thread.join();
+			vector<thread> threads;
+			for(int i = 0; i < numThreads; i++)
+			{
+				unsigned start = i * m_width / numThreads;
+				unsigned end;
+				if(i == numThreads-1)
+					end = m_width;
+				else
+					end = start + m_width / numThreads;
+				threads.push_back(thread(&Raytracer::Thrender, this, start, end));
+			}
+			for(auto &thread : threads)
+				thread.join();
 			
 
 			iterationDone = std::chrono::high_resolution_clock::now();

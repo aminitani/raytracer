@@ -38,6 +38,8 @@ CChildView::CChildView(int width, int height)
 {
     SetDoubleBuffer(true);
 
+	useGPU = false;
+
     //m_senorFishyFish.LoadFile(L"models/BLUEGILL.bmp");
 	//m_fish.SetTexture(&m_senorFishyFish);
 	//m_fish.LoadOBJ("models\\fish4.obj");
@@ -53,7 +55,7 @@ CChildView::CChildView(int width, int height)
 
 	scene = new Scene();
 
-	//raytracer = new Raytracer(m_width, m_height, pixels, *camera);
+	raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
 	pendingRending = false;
 
@@ -98,6 +100,8 @@ BEGIN_MESSAGE_MAP(CChildView,COpenGLWnd )
 	ON_COMMAND(ID_RENDER_TURNTABLE, &CChildView::OnRenderTurntable)
 	ON_WM_TIMER()
 	ON_UPDATE_COMMAND_UI(ID_RENDER_TURNTABLE, &CChildView::OnUpdateRenderTurntable)
+	ON_COMMAND(ID_COMPUTEDEVICE_GPU, &CChildView::OnComputedeviceGpu)
+	ON_UPDATE_COMMAND_UI(ID_COMPUTEDEVICE_GPU, &CChildView::OnUpdateComputedeviceGpu)
 END_MESSAGE_MAP()
 
 
@@ -258,10 +262,13 @@ void CChildView::Render()
 		readyToRender = false;
 		//renderTest(devPtr, m_width, m_height);
 
-		CUDAThrender(devPtr, *camera, *scene);
-		cudaDeviceSynchronize();
-		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
-		
+		if(useGPU) {	// GPU render
+			CUDAThrender(devPtr, *camera, *scene);
+			cudaDeviceSynchronize();
+			cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
+		} else {		// CPU render
+			raytracer->Render(8, *scene, *camera);
+		}
 		Invalidate();
 		
 		readyToRender = true;
@@ -438,4 +445,17 @@ void CChildView::OnTimer(UINT_PTR nIDEvent)
 void CChildView::OnUpdateRenderTurntable(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(tTTimer != 0);
+}
+
+
+void CChildView::OnComputedeviceGpu()
+{
+	// TODO: Add your command handler code here
+	useGPU = !useGPU;
+}
+
+
+void CChildView::OnUpdateComputedeviceGpu(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(useGPU);
 }
