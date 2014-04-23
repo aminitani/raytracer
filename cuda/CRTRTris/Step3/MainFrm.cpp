@@ -39,6 +39,7 @@ static UINT indicators[] =
 
 CMainFrame::CMainFrame()
 {
+	// TODO: add member initialization code here
 	m_width = 640;
 	m_height = 480;
 	m_wndView = new CChildView(m_width, m_height);
