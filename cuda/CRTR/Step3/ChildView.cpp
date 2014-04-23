@@ -38,7 +38,8 @@ CChildView::CChildView(int width, int height)
 {
     SetDoubleBuffer(true);
 
-	useGPU = false;
+	useGPU = true;
+	numThreads = 1;
 
     //m_senorFishyFish.LoadFile(L"models/BLUEGILL.bmp");
 	//m_fish.SetTexture(&m_senorFishyFish);
@@ -102,6 +103,12 @@ BEGIN_MESSAGE_MAP(CChildView,COpenGLWnd )
 	ON_UPDATE_COMMAND_UI(ID_RENDER_TURNTABLE, &CChildView::OnUpdateRenderTurntable)
 	ON_COMMAND(ID_COMPUTEDEVICE_GPU, &CChildView::OnComputedeviceGpu)
 	ON_UPDATE_COMMAND_UI(ID_COMPUTEDEVICE_GPU, &CChildView::OnUpdateComputedeviceGpu)
+	ON_COMMAND(ID_CPUTHREADS_1, &CChildView::OnCputhreads1)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_1, &CChildView::OnUpdateCputhreads1)
+	ON_COMMAND(ID_CPUTHREADS_8, &CChildView::OnCputhreads8)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_8, &CChildView::OnUpdateCputhreads8)
+	ON_COMMAND(ID_CPUTHREADS_4, &CChildView::OnCputhreads4)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_4, &CChildView::OnUpdateCputhreads4)
 END_MESSAGE_MAP()
 
 
@@ -267,7 +274,7 @@ void CChildView::Render()
 			cudaDeviceSynchronize();
 			cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
 		} else {		// CPU render
-			raytracer->Render(8, *scene, *camera);
+			raytracer->Render(numThreads, *scene, *camera);
 			// swap buffer
 			float * tmp = pixels;
 			pixels = raytracer->buffer;
@@ -462,4 +469,40 @@ void CChildView::OnComputedeviceGpu()
 void CChildView::OnUpdateComputedeviceGpu(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(useGPU);
+}
+
+
+void CChildView::OnCputhreads1()
+{
+	numThreads = 1;
+}
+
+
+void CChildView::OnUpdateCputhreads1(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==1);
+}
+
+
+void CChildView::OnCputhreads8()
+{
+	numThreads = 8;
+}
+
+
+void CChildView::OnUpdateCputhreads8(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==8);
+}
+
+
+void CChildView::OnCputhreads4()
+{
+	numThreads = 4;
+}
+
+
+void CChildView::OnUpdateCputhreads4(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==4);
 }

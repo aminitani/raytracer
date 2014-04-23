@@ -293,7 +293,7 @@ class Raytracer
 			vector<thread> threads;
 			for(int i = 0; i < numThreads; i++)
 			{
-				unsigned start = i * m_width / numThreads;
+				unsigned start = i * (m_width / numThreads);
 				unsigned end;
 				if(i == numThreads-1)
 					end = m_width;
