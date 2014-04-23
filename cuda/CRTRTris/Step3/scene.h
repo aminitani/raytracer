@@ -22,7 +22,7 @@ struct Scene
 	Light *light;
 	//unsigned numLights;
 
-	CUDA_CALLABLE_MEMBER Scene(unsigned numTris, Vec3 *triVerts)
+	CUDA_CALLABLE_MEMBER Scene(unsigned numTris, Vec3 *triVerts, Vec3 *triNorms)
 	{
 		/*
 		numTris = 1; //you can easily limit how many tris are drawn in this way
@@ -46,7 +46,7 @@ struct Scene
 		triangles = (Triangle *) malloc (numTriangles * sizeof(Triangle));
 		
 		for(unsigned i=0; i<numTriangles; i++) {
-			triangles[i] = Triangle(triVerts[i*3], triVerts[i*3+1], triVerts[i*3+2], Vec3(0.0,0.0,0.4));
+			triangles[i] = Triangle(triVerts[i*3], triVerts[i*3+1], triVerts[i*3+2], triNorms[i], Vec3(0.0,0.0,0.4));
 		}
 		//Cube----------------------------------------------------------------------------------------------------------
 		/*			  8------7    

@@ -72,7 +72,7 @@ __global__ void Trace(float *pixels, float INFINITY, Camera camera, Scene *scene
 	if (triangle != NULL) {
 		// compute phit and nhit
 		Vec3 pHit = primaryRay.Point() + primaryRay.Direction() * minDist; // point of intersection
-		Vec3 nHit = triangle->Normal(pHit);
+		Vec3 nHit = triangle->Normal();
 
 		// compute illumination
 		Ray shadowRay;

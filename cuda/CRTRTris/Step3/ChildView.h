@@ -90,11 +90,15 @@ private:
 	void TurnTable();
 
 	//Loading OBJ's
-	void GetNumOBJTris(const char *filename);
+	void AnalyzeOBJ(const char *filename);
 	void LoadOBJ(const char *filename);
 	Vec3 *vertices;
-	Vec3 *triVerts; //basically just the vertices array ordered properly for Triangle construction.
+	Vec3 *normals;
+	Vec3 *normalAverager;
+	Vec3 *triNorms;
+	Vec3 *triVerts; //this contains the contents of the vertices array(with duplicates) ordered properly for Triangle construction.
 	unsigned numVerts;
+	unsigned numNorms;
 	unsigned numTris;
 	char *fileOBJ; //The OBJ file to be loaded
 
