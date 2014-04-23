@@ -29,7 +29,7 @@ class Raytracer
 		float INFINITY;
 		Image *image;
 		Camera *camera;//note that there are two cameras; childview's updates constantly, while this gets 'snapshots' every rendered frame
-		vector<Sphere *> objects;
+		vector<Triangle *> triangles;
 		Scene *scene;
 		Light *light;
 		float *pixels;//the pixel buffer shared between the childview and this raytracer
@@ -47,7 +47,7 @@ class Raytracer
 		float *buffer;//write to this, then push into pixels when the whole image is done
 
 
-		Raytracer(int width, int height, float *inPixels, Camera inCamera)
+		Raytracer(int width, int height, float *inPixels, Camera inCamera, Scene inScene)
 		{
 			INFINITY = std::numeric_limits<float>::infinity();
 			//image = new Image(width, height, "test.png");
@@ -60,7 +60,7 @@ class Raytracer
 
 			defaultColor = Vec3(0.3);
 			BLACK = Vec3(0.0);
-			scene = new Scene();
+			scene = new Scene(inScene);
 		}
 		
 		~Raytracer()
@@ -71,10 +71,10 @@ class Raytracer
 			delete camera;
 			camera = NULL;
 			
-			for(Sphere *obj : objects)
+			for(Triangle *tri : triangles)
 			{
-				delete obj;
-				obj = NULL;
+				delete tri;
+				tri = NULL;
 			}
 			
 			delete light;
@@ -184,22 +184,22 @@ class Raytracer
 		Vec3 Trace(Ray &ray, int depth)
 		{
 			float minDist = INFINITY;
-			Sphere *sphere = NULL;
-			for (unsigned k = 0; k < scene->numSpheres; ++k) {
+			Triangle *triangle = NULL;
+			for (unsigned k = 0; k < scene->numTriangles; ++k) {
 				float t0 = INFINITY;
-				if ((scene->spheres[k]).Intersect(ray, &t0)) {
+				if ((scene->triangles[k]).Intersect(ray, &t0)) {
 					if (t0 < minDist) {
-						sphere = &(scene->spheres[k]);
+						triangle = &(scene->triangles[k]);
 						minDist = t0; // update min distance
 					}
 				}
 			}
-			if (sphere != NULL) {
+			if (triangle != NULL) {
 				Vec3 surfaceColor = Vec3();
 
 				// compute phit and nhit
 				Vec3 pHit = ray.Point() + ray.Direction() * minDist; // point of intersection
-				Vec3 nHit = sphere->Normal(pHit);
+				Vec3 nHit = triangle->Normal();
 
 				// compute illumination
 				bool inside = false;
@@ -209,7 +209,7 @@ class Raytracer
 					inside = true;
 				}
 
-				if ((sphere->GetMaterial().transparency > 0 || sphere->GetMaterial().reflection > 0) && depth < MAXBOUNCES)
+				if ((triangle->GetMaterial().transparency > 0 || triangle->GetMaterial().reflection > 0) && depth < MAXBOUNCES)
 				{
 					float facingRatio = -ray.Direction().dot(nHit);
 					float fresnelEffect = mix(pow(1 - facingRatio, 3), 1, 0.1);
@@ -221,17 +221,17 @@ class Raytracer
 					Vec3 refraction = Vec3(0);
 
 			
-					if (sphere->GetMaterial().transparency > 0) {
-						float eta = (inside) ? sphere->GetMaterial().IOR : 1 / sphere->GetMaterial().IOR; // are we inside or outside the surface?
+					if (triangle->GetMaterial().transparency > 0) {
+						float eta = (inside) ? triangle->GetMaterial().IOR : 1 / triangle->GetMaterial().IOR; // are we inside or outside the surface?
 						float cosi = -nHit.dot(ray.Direction());
 						float k = 1 - eta * eta * (1 - cosi * cosi);
 						Vec3 refractionDirection = ray.Direction() * eta + nHit * (eta *  cosi - sqrt(k));
 						refractionDirection.normalize();
 						refraction = Trace( Ray(pHit - nHit * COLLISIONERROR, refractionDirection), depth + 1 );
 					}
-					// the result is a mix of reflection and refraction (if the sphere is transparent)
+					// the result is a mix of reflection and refraction (if the triangle is transparent)
 					surfaceColor = (reflection * fresnelEffect + 
-						refraction * (1 - fresnelEffect) * sphere->GetMaterial().transparency) * sphere->GetMaterial().color;
+						refraction * (1 - fresnelEffect) * triangle->GetMaterial().transparency) * triangle->GetMaterial().color;
 				}
 				else//diffuse, just get the color now
 				{
@@ -239,15 +239,15 @@ class Raytracer
 					shadowRay.Point() = pHit;
 					shadowRay.Direction() = (scene->light->position - pHit/*(pHit + COLLISIONERROR * nhit)*/).normalize();
 					bool isInShadow = false;
-					for (unsigned k = 0; k < scene->numSpheres; ++k) {
+					for (unsigned k = 0; k < scene->numTriangles; ++k) {
 						float t0 = INFINITY;
-						if ((scene->spheres[k]).Intersect(shadowRay, &t0)) {
+						if ((scene->triangles[k]).Intersect(shadowRay, &t0)) {
 							isInShadow = true;
 							break;
 						}
 					}
 					if (!isInShadow) {
-						surfaceColor = sphere->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->Brightness( (scene->light->position - pHit).length() );
+						surfaceColor = triangle->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->Brightness( (scene->light->position - pHit).length() );
 						SaturateColor(surfaceColor);
 					}
 					else {

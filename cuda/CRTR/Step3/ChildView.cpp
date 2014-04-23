@@ -71,7 +71,7 @@ CChildView::CChildView(int width, int height)
 	LoadOBJ(fileOBJ);
 	scene = new Scene(numTris, triVerts, triNorms);
 
-	raytracer = new Raytracer(m_width, m_height, pixels, *camera);
+	raytracer = new Raytracer(m_width, m_height, pixels, *camera, *scene);
 	readyToRender = true;
 	pendingRending = false;
 
