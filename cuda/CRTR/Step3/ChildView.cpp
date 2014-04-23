@@ -15,6 +15,8 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
+#include <fstream>
+
 //text on screen
 #include <stdarg.h>
 
@@ -51,8 +53,20 @@ CChildView::CChildView(int width, int height)
 	
 	//camera is placed at (0,0,0) and faces in the negative z direction, looking at red sphere in sample scene
 	camera = new Camera(Transform::TransformFromPos(Vec3(0, 0, 20)).RotateOnYAroundSelf(180)/*Transform(camTrans)*/, GR_PI * 55.0 / 180.0, m_width, m_height);
-
-	scene = new Scene();
+	
+	//construct scene
+	fileOBJ = "models\\cube.obj"; //fish4 or cube
+	numVerts = 0;
+	numNorms = 0;
+	numTris = 0;
+	AnalyzeOBJ(fileOBJ);
+	vertices = new Vec3[numVerts];
+	normals = new Vec3[numNorms];
+	triVerts = new Vec3[numTris*3];
+	triNorms = new Vec3[numTris];
+	normalAverager = new Vec3[3];
+	LoadOBJ(fileOBJ);
+	scene = new Scene(numTris, triVerts, triNorms);
 
 	//raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
@@ -79,6 +93,12 @@ CChildView::~CChildView()
 	pixels = NULL;
 	//delete raytracer;
 	//raytracer = NULL;
+	delete [] vertices;
+	delete [] normals;
+	delete [] triVerts;
+	delete [] triNorms;
+	delete [] normalAverager;
+	delete [] fileOBJ;
 	delete scene;
 	scene = NULL;
 
@@ -417,13 +437,21 @@ void CChildView::OnTimer(UINT_PTR nIDEvent)
 	float deltangle = 1;
 	tTAngle = fmodf(tTAngle + deltangle, 360.0);
 	//for scene turntable
-	for(int i = 0; i < scene->numSpheres; i++)
-	{
-		Transform::TransformVec3(scene->spheres[i].center, Transform::RotationOnYAroundOrigin(deltangle));
-	}
+	//for(int i = 0; i < scene->numSpheres; i++)
+	//{
+	//	Transform::TransformVec3(scene->spheres[i].center, Transform::RotationOnYAroundOrigin(deltangle));
+	//}
+	//triangle scene turntable
+	//for(int i = 0; i < scene->numTriangles; i++)
+	//{
+	//	Transform::TransformVec3(scene->triangles[i].v0, Transform::RotationOnYAroundOrigin(deltangle));
+	//	Transform::TransformVec3(scene->triangles[i].v1, Transform::RotationOnYAroundOrigin(deltangle));
+	//	Transform::TransformVec3(scene->triangles[i].v2, Transform::RotationOnYAroundOrigin(deltangle));
+	//}
 
 	//for camera turntable
-	//camera->orientation.RotateOnYAroundPoint(deltangle, camera->Center());
+	camera->orientation.RotateOnYAroundPoint(deltangle, camera->Center());
+	Transform::TransformVec3(scene->light->position, Transform::RotationOnYAroundOrigin(deltangle));
 	
 	//this was dumb...
 	//basically trying to do a 'lookat' function, which was unnecessary
@@ -443,4 +471,94 @@ void CChildView::OnTimer(UINT_PTR nIDEvent)
 void CChildView::OnUpdateRenderTurntable(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(tTTimer != 0);
+}
+
+
+void CChildView::LoadOBJ(const char *filename)
+{
+	std::ifstream str(filename);
+	if(!str)
+	{
+		AfxMessageBox(L"File not found");
+		return;
+	}
+
+	unsigned verticesIndex = 0;
+	unsigned triVertsIndex = 0;
+	unsigned normalsIndex = 0;
+	unsigned triNormsIndex = 0;
+	unsigned normalAveragerIndex = 0;
+	std::string line;
+	while(getline(str, line))
+	{
+		std::istringstream lstr(line);
+
+		std::string code;
+		lstr >> code;
+		if(code == "v") 
+		{
+			double x, y, z;
+			lstr >> x >> y >> z;
+			//AddVertex(CGrVector(x, y, z, 1));
+			vertices[verticesIndex] = Vec3(x,y,z);
+			verticesIndex++;
+		}
+		else if(code == "vn")
+		{
+			double x, y, z;
+			lstr >> x >> y >> z;
+			//AddNormal(CGrVector(x, y, z, 0.0));
+			normals[normalsIndex] = Vec3(x,y,z);
+			normalsIndex++;
+		}/*
+		else if(code == "vt")
+		{
+			double s, t;
+			lstr >> s >> t;
+			AddTexCoord(CGrVector(s, t, 0, 1));
+		}*/
+		else if(code == "f")
+		{
+			for(int i=0;  i<3;  i++)
+			{
+				char slash;
+				unsigned v, t, n;
+				lstr >> v >> slash >> t >> slash >> n;
+				//AddTriangleVertex(v-1, n-1, t-1);
+				triVerts[triVertsIndex] = vertices[v-1]; //faces reference vertices array with index beginning at 1
+				triVertsIndex++;
+				normalAverager[normalAveragerIndex] = normals[n-1];
+				normalAveragerIndex++;
+			}
+			normalAveragerIndex = 0;
+			triNorms[triNormsIndex] = Vec3( (normalAverager[0].x + normalAverager[1].x + normalAverager[2].x)/3, (normalAverager[0].y + normalAverager[1].y + normalAverager[2].y)/3, (normalAverager[0].z + normalAverager[1].z + normalAverager[2].z)/3 );
+			triNormsIndex++;
+		}
+	}
+}
+
+
+void CChildView::AnalyzeOBJ(const char *filename)
+{
+	std::ifstream str(filename);
+	if(!str)
+	{
+		AfxMessageBox(L"File not found");
+		return;
+	}
+
+	std::string line;
+	while(getline(str, line))
+	{
+		std::istringstream lstr(line);
+
+		std::string code;
+		lstr >> code;
+		if(code == "v")
+			numVerts++;
+		else if(code == "vn")
+			numNorms++;
+		else if(code == "f")
+			numTris++;
+	}
 }

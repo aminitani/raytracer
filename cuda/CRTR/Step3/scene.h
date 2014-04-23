@@ -12,30 +12,20 @@
 
 struct Scene
 {
-	Sphere *spheres;
-	unsigned numSpheres;
+	Triangle *triangles;
+	unsigned numTriangles;
 
 	Light *light;
 	//unsigned numLights;
 
-	CUDA_CALLABLE_MEMBER Scene()
+	CUDA_CALLABLE_MEMBER Scene(unsigned numTris, Vec3 *triVerts, Vec3 *triNorms)
 	{
-		//casting to type * is bad in c, but c++ compiler needs it, sadface
-		numSpheres = 5;
-		spheres = (Sphere *) malloc (numSpheres * sizeof(Sphere));
+		numTriangles = numTris;
+		triangles = (Triangle *) malloc (numTriangles * sizeof(Triangle));
 		
-		//spheres[0] = Sphere( Vec3(3, 1, -2), 3.0, Material(0, 0.5, 1.5, Vec3(1, 0, 1)) );
-		//spheres[1] = Sphere( Vec3(-2, -1, 2), 2.0, Material(0.0, 0.1, 1.5, Vec3(1, 1, 1)) );
-		//spheres[2] = Sphere( Vec3(0, -10005, 0), 10000, Material(0, 0.1, 1.5, Vec3(0, 1, 1)) );
-
-
-		spheres[0] = Sphere(Vec3(0, -10004, 0), 10000, Material(0, .2, 1.5, Vec3(.6)));
-		spheres[1] = Sphere(Vec3(0, 0, 0), 4, Material(.5, 1, 1.5, Vec3(1.00, 0.32, 0.36)));
-		spheres[2] = Sphere(Vec3(5, -1, 5), 2, Material(0, 1, 1.5, Vec3(0.90, 0.76, 0.46)));
-		spheres[3] = Sphere(Vec3(5, 0, -5), 3, Material(0, 1, 1.5, Vec3(0.65, 0.77, 0.97)));
-		spheres[4] = Sphere(Vec3(-5.5, 0, 5), 3, Material(0, 1, 1.5, Vec3(0.90, 0.90, 0.90)));
-
-
+		for(unsigned i=0; i<numTriangles; i++)
+			triangles[i] = Triangle(triVerts[i*3], triVerts[i*3+1], triVerts[i*3+2], triNorms[i], Material(0, 0, 1.5, Vec3(0.0,0.0,0.4)));
+		
 		light = new Light(Vec3(0, 20, -30), 0.8);
 		//light = new Light(Vec3(-3.0,10.0,3.0), .8);
 	}
@@ -43,30 +33,30 @@ struct Scene
 	CUDA_CALLABLE_MEMBER Scene(const Scene &scene)
 	{
 		this->light = new Light(*scene.light);
-
-		this->numSpheres = scene.numSpheres;
-		this->spheres = (Sphere *) malloc (numSpheres * sizeof(Sphere));
-		for(int i = 0; i < numSpheres; i++)
-			this->spheres[i] = Sphere(scene.spheres[i]);
+		
+		this->numTriangles = scene.numTriangles;
+		this->triangles = (Triangle *) malloc (numTriangles * sizeof(Triangle));
+		for(int i = 0; i < numTriangles; i++)
+			this->triangles[i] = Triangle(scene.triangles[i]);
 	}
 	
 #ifdef __CUDACC__
 	__device__~Scene()
 	{
-		cudaFree((void**)&spheres);
+		cudaFree((void**)&triangles);
 		cudaFree((void**)&light);
 		light = NULL;
-		spheres = NULL;
-		numSpheres = 0;
+		triangles = NULL;
+		numTriangles = 0;
 	}
 #else
 	~Scene()
 	{
-		delete [] spheres;
+		delete [] triangles;
 		delete light;
 		light = NULL;
-		spheres = NULL;
-		numSpheres = 0;
+		triangles = NULL;
+		numTriangles = 0;
 	}
 #endif
 };

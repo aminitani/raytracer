@@ -66,22 +66,22 @@ template <int depth>
 __device__ Vec3 Trace(Ray &ray, Scene *scene)
 {
 	float minDist = CUDART_INF_F;
-	Sphere *sphere = NULL;
-	for (unsigned k = 0; k < scene->numSpheres; ++k) {
+	Triangle *triangle = NULL;
+	for (unsigned k = 0; k < scene->numTriangles; ++k) {
 		float t0 = CUDART_INF_F;
-		if ((scene->spheres[k]).Intersect(ray, &t0)) {
+		if ((scene->triangles[k]).Intersect(ray, &t0)) {
 			if (t0 < minDist) {
-				sphere = &(scene->spheres[k]);
+				triangle = &(scene->triangles[k]);
 				minDist = t0; // update min distance
 			}
 		}
 	}
-	if (sphere != NULL) {
+	if (triangle != NULL) {
 		Vec3 surfaceColor = Vec3();
 
 		// compute phit and nhit
 		Vec3 pHit = ray.Point() + ray.Direction() * minDist; // point of intersection
-		Vec3 nHit = sphere->Normal(pHit);
+		Vec3 nHit = triangle->Normal();
 
 		// compute illumination
 		bool inside = false;
@@ -91,7 +91,7 @@ __device__ Vec3 Trace(Ray &ray, Scene *scene)
 			inside = true;
 		}
 
-		if ((sphere->GetMaterial().transparency > 0 || sphere->GetMaterial().reflection > 0) && depth < MAXBOUNCES)
+		if ((triangle->GetMaterial().transparency > 0 || triangle->GetMaterial().reflection > 0) && depth < MAXBOUNCES)
 		{
 			float facingRatio = -ray.Direction().dot(nHit);
 			float fresnelEffect = mix(pow(1 - facingRatio, 3), 1, 0.1);
@@ -103,33 +103,37 @@ __device__ Vec3 Trace(Ray &ray, Scene *scene)
 			Vec3 refraction = Vec3(0);
 
 			
-			if (sphere->GetMaterial().transparency > 0) {
-				float eta = (inside) ? sphere->GetMaterial().IOR : 1 / sphere->GetMaterial().IOR; // are we inside or outside the surface?
+			if (triangle->GetMaterial().transparency > 0) {
+				float eta = (inside) ? triangle->GetMaterial().IOR : 1 / triangle->GetMaterial().IOR; // are we inside or outside the surface?
 				float cosi = -nHit.dot(ray.Direction());
 				float k = 1 - eta * eta * (1 - cosi * cosi);
 				Vec3 refractionDirection = ray.Direction() * eta + nHit * (eta *  cosi - sqrt(k));
 				refractionDirection.normalize();
 				refraction = Trace<depth + 1>( Ray(pHit - nHit * COLLISIONERROR, refractionDirection), scene );
 			}
-			// the result is a mix of reflection and refraction (if the sphere is transparent)
+			// the result is a mix of reflection and refraction (if the triangle is transparent)
 			surfaceColor = (reflection * fresnelEffect + 
-				refraction * (1 - fresnelEffect) * sphere->GetMaterial().transparency) * sphere->GetMaterial().color;
+				refraction * (1 - fresnelEffect) * triangle->GetMaterial().transparency) * triangle->GetMaterial().color;
 		}
 		else//diffuse, just get the color now
 		{
 			Ray shadowRay;
-			shadowRay.Point() = pHit;
+			shadowRay.Point() = pHit + nHit * COLLISIONERROR;
 			shadowRay.Direction() = (scene->light->position - pHit/*(pHit + COLLISIONERROR * nhit)*/).normalize();
 			bool isInShadow = false;
-			for (unsigned k = 0; k < scene->numSpheres; ++k) {
+			float shadowMinDist = (scene->light->position - pHit).length();
+			for (unsigned k = 0; k < scene->numTriangles; ++k) {
 				float t0 = CUDART_INF_F;
-				if ((scene->spheres[k]).Intersect(shadowRay, &t0)) {
-					isInShadow = true;
-					break;
+				if ((scene->triangles[k]).Intersect(shadowRay, &t0)) {
+					if (t0 > 0 && t0 < shadowMinDist) {
+						triangle = &(scene->triangles[k]);
+						isInShadow = true;
+						break;
+					}
 				}
 			}
 			if (!isInShadow) {
-				surfaceColor = sphere->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->Brightness( (scene->light->position - pHit).length() );
+				surfaceColor = triangle->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->Brightness( (scene->light->position - pHit).length() );
 				SaturateColor(surfaceColor);
 			}
 			else {
@@ -147,36 +151,40 @@ template<>
 __device__ Vec3 Trace<MAXBOUNCES>(Ray &ray, Scene *scene)
 {
 	float minDist = CUDART_INF_F;
-	Sphere *sphere = NULL;
-	for (unsigned k = 0; k < scene->numSpheres; ++k) {
+	Triangle *triangle = NULL;
+	for (unsigned k = 0; k < scene->numTriangles; ++k) {
 		float t0 = CUDART_INF_F;
-		if ((scene->spheres[k]).Intersect(ray, &t0)) {
+		if ((scene->triangles[k]).Intersect(ray, &t0)) {
 			if (t0 < minDist) {
-				sphere = &(scene->spheres[k]);
+				triangle = &(scene->triangles[k]);
 				minDist = t0; // update min distance
 			}
 		}
 	}
-	if (sphere != NULL) {
+	if (triangle != NULL) {
 		Vec3 surfaceColor = Vec3();
 
 		// compute phit and nhit
 		Vec3 pHit = ray.Point() + ray.Direction() * minDist; // point of intersection
-		Vec3 nHit = sphere->Normal(pHit);
+		Vec3 nHit = triangle->Normal();
 
 		Ray shadowRay;
-		shadowRay.Point() = pHit;
+		shadowRay.Point() = pHit + nHit * COLLISIONERROR;
 		shadowRay.Direction() = (scene->light->position - pHit/*(pHit + COLLISIONERROR * nhit)*/).normalize();
 		bool isInShadow = false;
-		for (unsigned k = 0; k < scene->numSpheres; ++k) {
+		float shadowMinDist = (scene->light->position - pHit).length();
+		for (unsigned k = 0; k < scene->numTriangles; ++k) {
 			float t0 = CUDART_INF_F;
-			if ((scene->spheres[k]).Intersect(shadowRay, &t0)) {
-				isInShadow = true;
-				break;
+			if ((scene->triangles[k]).Intersect(shadowRay, &t0)) {
+				if (t0 > 0 && t0 < shadowMinDist) {
+					triangle = &(scene->triangles[k]);
+					isInShadow = true;
+					break;
+				}
 			}
 		}
 		if (!isInShadow) {
-			surfaceColor = sphere->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->Brightness( (scene->light->position - pHit).length() );
+			surfaceColor = triangle->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->Brightness( (scene->light->position - pHit).length() );
 			SaturateColor(surfaceColor);
 		}
 		else {
@@ -215,13 +223,10 @@ extern "C" {
 
 	void CUDAThrender(float *pixels, Camera camera, Scene scene)
 	{
-		//TODO: right here, replace the pointer to spheres and the pointer to light
-		//in the scene variable with newly allocated device pointers before passing
-		//the scene to the device in the trace call
-		Sphere *dSpheres;
-		cudaMalloc((void**) &(dSpheres), sizeof(Sphere)*scene.numSpheres);
-		cudaMemcpy(dSpheres, scene.spheres, sizeof(Sphere)*scene.numSpheres, cudaMemcpyHostToDevice);
-		scene.spheres = dSpheres;
+		Triangle *dTriangles;
+		cudaMalloc((void**) &(dTriangles), sizeof(Triangle)*scene.numTriangles);
+		cudaMemcpy(dTriangles, scene.triangles, sizeof(Triangle)*scene.numTriangles, cudaMemcpyHostToDevice);
+		scene.triangles = dTriangles;
 		
 		Light *dLight;
 		cudaMalloc((void**) &(dLight), sizeof(Light));

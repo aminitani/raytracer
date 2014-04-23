@@ -1,5 +1,4 @@
 #pragma once
-#include "./object.h"
 
 #ifdef __CUDACC__
 #define CUDA_CALLABLE_MEMBER __host__ __device__
@@ -7,42 +6,65 @@
 #define CUDA_CALLABLE_MEMBER
 #endif
 
-class Triangle : public Object {
+#define EPSILON 0.000000000008854
+
+class Triangle {
 public:
-	Vec3 vert[3];
-	Triangle(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 color) : Object(color) {
-		vert[0] = v1;
-		vert[1] = v2;
-		vert[2] = v3;
+	Vec3 v0, v1, v2;
+
+	CUDA_CALLABLE_MEMBER Triangle(Vec3 vert0, Vec3 vert1, Vec3 vert2, Vec3 _normal, Material _material) : v0(vert0), v1(vert1), v2(vert2), material(_material), normal(_normal) {}
+
+	CUDA_CALLABLE_MEMBER Triangle(const Triangle &triangle) {
+		this->v0 = triangle.v0;
+		this->v1 = triangle.v1;
+		this->v2 = triangle.v2;
+		this->normal = triangle.normal;
+		this->material = triangle.material;
 	}
 
-	CUDA_CALLABLE_MEMBER virtual bool Intersect(Ray &ray, float* t0) {
-		Vec3 tvec = ray.Point() - vert[0];  
-		Vec3 pvec = ray.Direction().cross(vert[2]);  
-		float  det  = vert[1].dot(pvec);
+	CUDA_CALLABLE_MEMBER bool Intersect(Ray &ray, float* t0) {
+		Vec3 edge1 = v1 - v0;
+		Vec3 edge2 = v2 - v0;
+		Vec3 pvec = ray.Direction().cross(edge2);
+		float det = edge1.dot(pvec); 
 
-		det = 1.0f / det;
+		if (det > -EPSILON && det < EPSILON) 
+			return false; 
 
-		float u = tvec.dot(pvec) * det;  
+		float invDet = 1 / det; 
+		Vec3 tvec = ray.Point() - v0; 
+		float u = tvec.dot(pvec) * invDet;
 
-		if (u < 0.0f || u > 1.0f)
-			return false;  
+		if (u < 0 || u > 1) 
+			return false; 
 
-		Vec3 qvec = tvec.cross(vert[1]);  
+		Vec3 qvec = tvec.cross(edge1); 
+		float v = ray.Direction().dot(qvec) * invDet; 
 
-		float v = ray.Direction().dot(qvec) * det;  
-
-		if (v < 0.0f || (u + v) > 1.0f)  
-			return false;
+		if (v < 0 || u + v > 1) 
+			return false; 
 
 		if(t0 != NULL)
-			*t0 = vert[2].dot(qvec) * det;
-		return true;
+			*t0 = edge2.dot(qvec) * invDet; 
+
+		return true; 
 	}
 
-	virtual Vec3 Normal(Vec3 phit) {
-		Vec3 normal = vert[1].cross(vert[2]);
+	CUDA_CALLABLE_MEMBER Vec3 Normal() {
+		/*
+		Vec3 edge1 = v1 - v0;
+		Vec3 edge2 = v2 - v0;
+		Vec3 normal = edge1.cross(edge2);
 		normal.normalize();
+		*/
 		return normal;
 	}
+
+	//CUDA_CALLABLE_MEMBER Vec3 Color() {return material.color;}
+	
+	CUDA_CALLABLE_MEMBER Material GetMaterial() {return material;}
+
+protected:
+	Vec3 normal;
+	Material material;
 };

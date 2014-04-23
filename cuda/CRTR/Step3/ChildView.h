@@ -88,6 +88,20 @@ private:
 	GLvoid GLPrint(const char *fmt, ...);
 	void Render();
 	void TurnTable();
+
+	//Loading OBJ's
+	void AnalyzeOBJ(const char *filename);
+	void LoadOBJ(const char *filename);
+	Vec3 *vertices;
+	Vec3 *normals;
+	Vec3 *normalAverager;
+	Vec3 *triNorms;
+	Vec3 *triVerts; //this contains the contents of the vertices array(with duplicates) ordered properly for Triangle construction.
+	unsigned numVerts;
+	unsigned numNorms;
+	unsigned numTris;
+	char *fileOBJ; //The OBJ file to be loaded
+
 public:
 	afx_msg void OnRenderStart();
 	afx_msg void OnRenderTurntable();
