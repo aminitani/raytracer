@@ -268,6 +268,10 @@ void CChildView::Render()
 			cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
 		} else {		// CPU render
 			raytracer->Render(8, *scene, *camera);
+			// swap buffer
+			float * tmp = pixels;
+			pixels = raytracer->buffer;
+			raytracer->buffer = tmp;
 		}
 		Invalidate();
 		

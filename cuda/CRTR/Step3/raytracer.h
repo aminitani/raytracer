@@ -33,7 +33,6 @@ class Raytracer
 		Scene *scene;
 		Light *light;
 		float *pixels;//the pixel buffer shared between the childview and this raytracer
-		float *localPixels;//write to this, then push into pixels when the whole image is done
 
 		unsigned int m_width, m_height;
 
@@ -43,23 +42,11 @@ class Raytracer
 		std::chrono::high_resolution_clock::time_point start;
 		std::chrono::high_resolution_clock::time_point iterationDone;
 		std::chrono::high_resolution_clock::time_point bufferCopied;
-
-		void ConstructScene() {
-			
-			/*objects.push_back( new Sphere(Vec3(0, -10004, 0), 10000, Material(0, .2, 1.5, Vec3(.6))));
-			objects.push_back( new Sphere(Vec3(0, 0, 0), 4, Material(.5, 1, 1.5, Vec3(1.00, 0.32, 0.36))));
-			objects.push_back( new Sphere(Vec3(5, -1, 5), 2, Material(0, 1, 1.5, Vec3(0.90, 0.76, 0.46))));
-			objects.push_back( new Sphere(Vec3(5, 0, -5), 3, Material(0, 1, 1.5, Vec3(0.65, 0.77, 0.97))));
-			objects.push_back( new Sphere(Vec3(-5.5, 0, 5), 3, Material(0, 1, 1.5, Vec3(0.90, 0.90, 0.90))));
-
-			light = new Light(Vec3(0, 20, -30), 0.8);
-			scene = new Scene();
-			scene->spheres = objects.front();
-			scene->numSpheres = 5;
-			scene->light = light;*/
-		}
 	
 	public:
+		float *buffer;//write to this, then push into pixels when the whole image is done
+
+
 		Raytracer(int width, int height, float *inPixels, Camera inCamera)
 		{
 			INFINITY = std::numeric_limits<float>::infinity();
@@ -69,8 +56,7 @@ class Raytracer
 			*camera = inCamera;
 
 			pixels = inPixels;
-			localPixels = new float[width*height*4];
-			ConstructScene();
+			buffer = new float[width*height*4];
 
 			defaultColor = Vec3(0.3);
 			BLACK = Vec3(0.0);
@@ -94,8 +80,8 @@ class Raytracer
 			delete light;
 			light = NULL;
 
-			delete [] localPixels;
-			localPixels = NULL;
+			delete [] buffer;
+			buffer = NULL;
 			
 			//don't delete pixels; childview's job
 			pixels = NULL;
@@ -290,10 +276,10 @@ class Raytracer
 	
 					pixel.SetColor(Trace(primaryRay, 0));
 
-					pixels[((m_height-1-j)*m_width + i)*4+0] = pixel.r;
-					pixels[((m_height-1-j)*m_width + i)*4+1] = pixel.g;
-					pixels[((m_height-1-j)*m_width + i)*4+2] = pixel.b;
-					pixels[((m_height-1-j)*m_width + i)*4+3] = pixel.a;
+					buffer[((m_height-1-j)*m_width + i)*4+0] = pixel.r;
+					buffer[((m_height-1-j)*m_width + i)*4+1] = pixel.g;
+					buffer[((m_height-1-j)*m_width + i)*4+2] = pixel.b;
+					buffer[((m_height-1-j)*m_width + i)*4+3] = pixel.a;
 				}
 			}
 		}
@@ -322,7 +308,7 @@ class Raytracer
 			iterationDone = std::chrono::high_resolution_clock::now();
 			
 			//for(int i = 0; i < image->Width()*image->Height()*4; i++)
-			//	pixels[i] = localPixels[i];
+			//	pixels[i] = buffer[i];
 
 			bufferCopied = std::chrono::high_resolution_clock::now();
 			
