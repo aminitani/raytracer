@@ -485,7 +485,7 @@ void CChildView::LoadOBJ(const char *filename)
 			{
 				char slash;
 				unsigned v, t, n;
-				lstr >> v /*>> slash >> t >> slash >> n*/;
+				lstr >> v >> slash >> t >> slash >> n;
 				//AddTriangleVertex(v-1, n-1, t-1);
 				triVerts[triVertsIndex] = vertices[v-1]; //faces reference vertices array with index beginning at 1
 				triVertsIndex++;
