@@ -235,8 +235,6 @@ extern "C" {
 		dim3 block(8,8,1);
 		dim3 grid(camera.Width()/block.x, camera.Height()/block.y, 1);
 		PrepareTrace<<<grid, block>>>(pixels, camera, dScene);
-		
-		//red<<<grid, block>>>(pixels, ts, camera, scene);
 	}
 
 
