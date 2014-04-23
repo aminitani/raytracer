@@ -12,14 +12,18 @@ class Triangle {
 public:
 	Vec3 v0, v1, v2;
 
-	CUDA_CALLABLE_MEMBER Triangle(Vec3 vert0, Vec3 vert1, Vec3 vert2, Vec3 _normal, Vec3 _color) : v0(vert0), v1(vert1), v2(vert2), color(_color), normal(_normal) {}
+	CUDA_CALLABLE_MEMBER Triangle(Vec3 vert0, Vec3 vert1, Vec3 vert2, Vec3 _color) : v0(vert0), v1(vert1), v2(vert2), color(_color) {
+		Vec3 edge1 = v1 - v0;
+		Vec3 edge2 = v2 - v0;
+		normal = edge1.cross(edge2).normalize();
+	}
 
 	CUDA_CALLABLE_MEMBER Triangle(const Triangle &triangle) {
 		this->v0 = triangle.v0;
 		this->v1 = triangle.v1;
 		this->v2 = triangle.v2;
-		this->normal = triangle.normal;
 		this->color = triangle.color;
+		this->normal = triangle.normal;
 	}
 
 	CUDA_CALLABLE_MEMBER bool Intersect(Ray &ray, float* t0) {
@@ -50,19 +54,11 @@ public:
 		return true; 
 	}
 
-	CUDA_CALLABLE_MEMBER Vec3 Normal() {
-		/*
-		Vec3 edge1 = v1 - v0;
-		Vec3 edge2 = v2 - v0;
-		Vec3 normal = edge1.cross(edge2);
-		normal.normalize();
-		*/
-		return normal;
-	}
+	CUDA_CALLABLE_MEMBER Vec3 Normal() {return normal;}
 
 	CUDA_CALLABLE_MEMBER Vec3 Color() {return color;}
 
 protected:
-	Vec3 normal; //average of vector normals?
+	Vec3 normal;
 	Vec3 color;
 };

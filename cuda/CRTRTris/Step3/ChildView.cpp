@@ -59,16 +59,12 @@ CChildView::CChildView(int width, int height)
 	//construct scene
 	fileOBJ = "models\\cube.obj"; //fish4 or cube
 	numVerts = 0;
-	numNorms = 0;
 	numTris = 0;
 	AnalyzeOBJ(fileOBJ);
 	vertices = new Vec3[numVerts];
-	normals = new Vec3[numNorms];
 	triVerts = new Vec3[numTris*3];
-	triNorms = new Vec3[numTris];
-	normalAverager = new Vec3[3];
 	LoadOBJ(fileOBJ);
-	scene = new Scene(numTris, triVerts, triNorms);
+	scene = new Scene(numTris, triVerts);
 
 	//raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
@@ -96,10 +92,7 @@ CChildView::~CChildView()
 	//delete raytracer;
 	//raytracer = NULL;
 	delete [] vertices;
-	delete [] normals;
 	delete [] triVerts;
-	delete [] triNorms;
-	delete [] normalAverager;
 	delete [] fileOBJ;
 	delete scene;
 	scene = NULL;
@@ -459,9 +452,7 @@ void CChildView::LoadOBJ(const char *filename)
 
 	unsigned verticesIndex = 0;
 	unsigned triVertsIndex = 0;
-	unsigned normalsIndex = 0;
-	unsigned triNormsIndex = 0;
-	unsigned normalAveragerIndex = 0;
+
 	std::string line;
 	while(getline(str, line))
 	{
@@ -476,15 +467,13 @@ void CChildView::LoadOBJ(const char *filename)
 			//AddVertex(CGrVector(x, y, z, 1));
 			vertices[verticesIndex] = Vec3(x,y,z);
 			verticesIndex++;
-		}
+		}/*
 		else if(code == "vn")
 		{
 			double x, y, z;
 			lstr >> x >> y >> z;
-			//AddNormal(CGrVector(x, y, z, 0.0));
-			normals[normalsIndex] = Vec3(x,y,z);
-			normalsIndex++;
-		}/*
+			AddNormal(CGrVector(x, y, z, 0.0));
+		}
 		else if(code == "vt")
 		{
 			double s, t;
@@ -501,12 +490,7 @@ void CChildView::LoadOBJ(const char *filename)
 				//AddTriangleVertex(v-1, n-1, t-1);
 				triVerts[triVertsIndex] = vertices[v-1]; //faces reference vertices array with index beginning at 1
 				triVertsIndex++;
-				normalAverager[normalAveragerIndex] = normals[n-1];
-				normalAveragerIndex++;
 			}
-			normalAveragerIndex = 0;
-			triNorms[triNormsIndex] = Vec3( (normalAverager[0].x + normalAverager[1].x + normalAverager[2].x)/3, (normalAverager[0].y + normalAverager[1].y + normalAverager[2].y)/3, (normalAverager[0].z + normalAverager[1].z + normalAverager[2].z)/3 );
-			triNormsIndex++;
 		}
 	}
 }
@@ -530,8 +514,6 @@ void CChildView::AnalyzeOBJ(const char *filename)
 		lstr >> code;
 		if(code == "v")
 			numVerts++;
-		else if(code == "vn")
-			numNorms++;
 		else if(code == "f")
 			numTris++;
 	}
