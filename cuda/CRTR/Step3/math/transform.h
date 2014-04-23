@@ -46,7 +46,6 @@ struct Transform
 			}
 		}
 		
-		//I demand an array of 16 floats organized row-major!
 		CUDA_CALLABLE_MEMBER static Transform TransformFromPos(Vec3 inPos)
 		{
 			Transform trans = Transform();
@@ -152,7 +151,7 @@ struct Transform
 			contents[3][2] += vec.z;
 		}
 
-		CUDA_CALLABLE_MEMBER void RotateOnXAroundSelf(float deg)
+		CUDA_CALLABLE_MEMBER Transform& RotateOnXAroundSelf(float deg)
 		{
 			deg = deg * GR_PI / 180.0;
 
@@ -168,9 +167,11 @@ struct Transform
 			(*this) *= transformation;
 
 			Translate(pos);
+
+			return *this;
 		}
 
-		CUDA_CALLABLE_MEMBER void RotateOnYAroundSelf(float deg)
+		CUDA_CALLABLE_MEMBER Transform& RotateOnYAroundSelf(float deg)
 		{
 			deg = deg * GR_PI / 180.0;
 
@@ -186,9 +187,11 @@ struct Transform
 			(*this) *= transformation;
 
 			Translate(pos);
+
+			return *this;
 		}
 
-		CUDA_CALLABLE_MEMBER void RotateOnZAroundSelf(float deg)
+		CUDA_CALLABLE_MEMBER Transform& RotateOnZAroundSelf(float deg)
 		{
 			deg = deg * GR_PI / 180.0;
 
@@ -204,9 +207,11 @@ struct Transform
 			(*this) *= transformation;
 
 			Translate(pos);
+
+			return *this;
 		}
 
-		CUDA_CALLABLE_MEMBER void RotateOnXAroundPoint(float deg, Vec3 point = Vec3())
+		CUDA_CALLABLE_MEMBER Transform& RotateOnXAroundPoint(float deg, Vec3 point = Vec3())
 		{
 			deg = deg * GR_PI / 180.0;
 
@@ -221,9 +226,11 @@ struct Transform
 			(*this) *= transformation;
 
 			Translate(point);
+
+			return *this;
 		}
 
-		CUDA_CALLABLE_MEMBER void RotateOnYAroundPoint(float deg, Vec3 point = Vec3())
+		CUDA_CALLABLE_MEMBER Transform& RotateOnYAroundPoint(float deg, Vec3 point = Vec3())
 		{
 			deg = deg * GR_PI / 180.0;
 
@@ -238,9 +245,11 @@ struct Transform
 			(*this) *= transformation;
 
 			Translate(point);
+
+			return *this;
 		}
 
-		CUDA_CALLABLE_MEMBER void RotateOnZAroundPoint(float deg, Vec3 point = Vec3())
+		CUDA_CALLABLE_MEMBER Transform& RotateOnZAroundPoint(float deg, Vec3 point = Vec3())
 		{
 			deg = deg * GR_PI / 180.0;
 
@@ -255,9 +264,11 @@ struct Transform
 			(*this) *= transformation;
 
 			Translate(point);
+
+			return *this;
 		}
 
-		CUDA_CALLABLE_MEMBER void RotateOnAxisAroundSelf(float deg, Vec3 axis)
+		CUDA_CALLABLE_MEMBER Transform& RotateOnAxisAroundSelf(float deg, Vec3 axis)
 		{
 			deg = deg * GR_PI / 180.0;
 
@@ -282,9 +293,11 @@ struct Transform
 			(*this) *= transformation;
 
 			Translate(pos);
+
+			return *this;
 		}
 
-		CUDA_CALLABLE_MEMBER void RotateOnAxisAroundPoint(float deg, Vec3 axis, Vec3 point = Vec3())
+		CUDA_CALLABLE_MEMBER Transform& RotateOnAxisAroundPoint(float deg, Vec3 axis, Vec3 point = Vec3())
 		{
 			deg = deg * GR_PI / 180.0;
 			
@@ -308,6 +321,8 @@ struct Transform
 			(*this) *= transformation;
 
 			Translate(point);
+
+			return *this;
 		}
 		
 		CUDA_CALLABLE_MEMBER static Transform RotationOnYAroundOrigin(float deg)
@@ -375,7 +390,7 @@ struct Transform
 			 return *this; // return the result by reference
 		 }
 		
-		 Transform& operator*(const Transform& other) // compound assignment
+		 Transform operator*(const Transform& other) // compound assignment
 		 {
 			 Transform output;
 			 for(int row = 0; row < 4; row++)

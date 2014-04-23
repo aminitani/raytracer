@@ -27,7 +27,7 @@ using std::thread;
 
 extern "C"
 {
-void CUDAThrender(float *pixels, float INFINITY, Camera camera, Scene scene);
+void CUDAThrender(float *pixels, Camera camera, Scene scene);
 //void renderTest(float*,int,int);
 }
 
@@ -48,9 +48,8 @@ CChildView::CChildView(int width, int height)
 	for(int i = 0; i < m_width * m_height * 4; i++)
 		pixels[i] = 0.0;
 	
-	//camera is placed at (0,0,10) and faces in the negative z direction, looking at origin
-	float camTrans[16] = {-1.0,0.0,0.0,0.0, 0.0,1.0,0.0,0.0, 0.0,0.0,-1.0,0.0, 0.0,0.0,10.0,1.0};
-	camera = new Camera(Transform(camTrans), GR_PI * 55.0 / 180.0, m_width, m_height);
+	//camera is placed at (0,0,0) and faces in the negative z direction, looking at red sphere in sample scene
+	camera = new Camera(Transform::TransformFromPos(Vec3(0, 0, 20)).RotateOnYAroundSelf(180)/*Transform(camTrans)*/, GR_PI * 55.0 / 180.0, m_width, m_height);
 
 	scene = new Scene();
 
@@ -259,7 +258,7 @@ void CChildView::Render()
 		readyToRender = false;
 		//renderTest(devPtr, m_width, m_height);
 
-		CUDAThrender(devPtr, std::numeric_limits<float>::infinity(), *camera, *scene);
+		CUDAThrender(devPtr, *camera, *scene);
 		cudaDeviceSynchronize();
 		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
 		
@@ -291,6 +290,30 @@ void CChildView::OnFileSavebmpfile()
 void CChildView::OnLButtonDown(UINT nFlags, CPoint point)
 {
     //m_camera.MouseDown(point.x, point.y);
+	
+	//Ray ray;
+	//ray.Point() = camera->orientation.Pos();
+	//Vec3 target =
+	//camera->GetViewPlane().ULCorner - camera->orientation.Left() * ( ((point.x+.5) / m_width) * 2*camera->GetViewPlane().hor )
+	//- camera->orientation.Up() * ( ((point.y+.5) / m_height) * 2*camera->GetViewPlane().vert );
+	//ray.Direction() = (target - camera->orientation.Pos()).normalize();
+	//
+	//bool hit = false;
+	//float minDist = std::numeric_limits<float>::infinity();
+	//for (unsigned k = 0; k < scene->numSpheres; ++k) {
+	//	float t0 = std::numeric_limits<float>::infinity();
+	//	if ((scene->spheres[k]).Intersect(ray, &t0)) {
+	//		if (t0 < minDist) {
+	//			minDist = t0; // update min distance
+	//			hit = true;
+	//		}
+	//	}
+	//}
+	//if(hit)
+	//{
+	//	Vec3 worldClick = ray.Point() + ray.Direction() * minDist;
+	//	camera->orientation.Translate((worldClick - camera->orientation.Forward() * camera->CenterDistance()) - camera->orientation.Pos());
+	//}
 
     COpenGLWnd ::OnLButtonDown(nFlags, point);
 }

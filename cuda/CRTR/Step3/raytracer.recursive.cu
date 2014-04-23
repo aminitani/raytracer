@@ -62,14 +62,13 @@ __device__ void ComputePrimaryRay(unsigned x, unsigned y, unsigned width, unsign
 	primaryRay->Direction() = (target - camera->orientation.Pos()).normalize();
 }
 
-template <int depth>
-__device__ Vec3 Trace(Ray &ray, Scene *scene)
+__device__ Vec3 Trace(Ray &primaryRay, Scene *scene, int depth)
 {
 	float minDist = CUDART_INF_F;
 	Sphere *sphere = NULL;
 	for (unsigned k = 0; k < scene->numSpheres; ++k) {
 		float t0 = CUDART_INF_F;
-		if ((scene->spheres[k]).Intersect(ray, &t0)) {
+		if ((scene->spheres[k]).Intersect(primaryRay, &t0)) {
 			if (t0 < minDist) {
 				sphere = &(scene->spheres[k]);
 				minDist = t0; // update min distance
@@ -80,12 +79,12 @@ __device__ Vec3 Trace(Ray &ray, Scene *scene)
 		Vec3 surfaceColor = Vec3();
 
 		// compute phit and nhit
-		Vec3 pHit = ray.Point() + ray.Direction() * minDist; // point of intersection
+		Vec3 pHit = primaryRay.Point() + primaryRay.Direction() * minDist; // point of intersection
 		Vec3 nHit = sphere->Normal(pHit);
 
 		// compute illumination
 		bool inside = false;
-		if(ray.Direction().dot(nHit) > 0)
+		if(primaryRay.Direction().dot(nHit) > 0)
 		{
 			nHit = nHit * -1;
 			inside = true;
@@ -93,23 +92,23 @@ __device__ Vec3 Trace(Ray &ray, Scene *scene)
 
 		if ((sphere->GetMaterial().transparency > 0 || sphere->GetMaterial().reflection > 0) && depth < MAXBOUNCES)
 		{
-			float facingRatio = -ray.Direction().dot(nHit);
+			float facingRatio = -primaryRay.Direction().dot(nHit);
 			float fresnelEffect = mix(pow(1 - facingRatio, 3), 1, 0.1);
 
-			Vec3 reflectionDirection = ray.Direction() - nHit * 2 * ray.Direction().dot(nHit);
+			Vec3 reflectionDirection = primaryRay.Direction() - nHit * 2 * primaryRay.Direction().dot(nHit);
 			reflectionDirection.normalize();
 
-			Vec3 reflection = Trace<depth+1>( Ray(pHit + nHit * COLLISIONERROR, reflectionDirection), scene );
+			Vec3 reflection = Trace( Ray(pHit + nHit * COLLISIONERROR, reflectionDirection), scene, depth+1 );
 			Vec3 refraction = Vec3(0);
 
 			
 			if (sphere->GetMaterial().transparency > 0) {
 				float eta = (inside) ? sphere->GetMaterial().IOR : 1 / sphere->GetMaterial().IOR; // are we inside or outside the surface?
-				float cosi = -nHit.dot(ray.Direction());
+				float cosi = -nHit.dot(primaryRay.Direction());
 				float k = 1 - eta * eta * (1 - cosi * cosi);
-				Vec3 refractionDirection = ray.Direction() * eta + nHit * (eta *  cosi - sqrt(k));
+				Vec3 refractionDirection = primaryRay.Direction() * eta + nHit * (eta *  cosi - sqrt(k));
 				refractionDirection.normalize();
-				refraction = Trace<depth + 1>( Ray(pHit - nHit * COLLISIONERROR, refractionDirection), scene );
+				refraction = Trace( Ray(pHit - nHit * COLLISIONERROR, refractionDirection), scene, depth + 1 );
 			}
 			// the result is a mix of reflection and refraction (if the sphere is transparent)
 			surfaceColor = (reflection * fresnelEffect + 
@@ -140,52 +139,6 @@ __device__ Vec3 Trace(Ray &ray, Scene *scene)
 		return surfaceColor;
 	}
 	else
-		return Vec3(1.0);
-}
-
-template<>
-__device__ Vec3 Trace<MAXBOUNCES>(Ray &ray, Scene *scene)
-{
-	float minDist = CUDART_INF_F;
-	Sphere *sphere = NULL;
-	for (unsigned k = 0; k < scene->numSpheres; ++k) {
-		float t0 = CUDART_INF_F;
-		if ((scene->spheres[k]).Intersect(ray, &t0)) {
-			if (t0 < minDist) {
-				sphere = &(scene->spheres[k]);
-				minDist = t0; // update min distance
-			}
-		}
-	}
-	if (sphere != NULL) {
-		Vec3 surfaceColor = Vec3();
-
-		// compute phit and nhit
-		Vec3 pHit = ray.Point() + ray.Direction() * minDist; // point of intersection
-		Vec3 nHit = sphere->Normal(pHit);
-
-		Ray shadowRay;
-		shadowRay.Point() = pHit;
-		shadowRay.Direction() = (scene->light->position - pHit/*(pHit + COLLISIONERROR * nhit)*/).normalize();
-		bool isInShadow = false;
-		for (unsigned k = 0; k < scene->numSpheres; ++k) {
-			float t0 = CUDART_INF_F;
-			if ((scene->spheres[k]).Intersect(shadowRay, &t0)) {
-				isInShadow = true;
-				break;
-			}
-		}
-		if (!isInShadow) {
-			surfaceColor = sphere->GetMaterial().color * max(0.0f, nHit.dot(shadowRay.Direction())) * scene->light->Brightness( (scene->light->position - pHit).length() );
-			SaturateColor(surfaceColor);
-		}
-		else {
-			surfaceColor = Vec3(0);
-		}
-
-		return surfaceColor;
-	}
-	else
 		return Vec3(0.3);
 }
 
@@ -201,7 +154,7 @@ __global__ void PrepareTrace(float *pixels, Camera camera, Scene *scene)
 	Ray primaryRay;
 	ComputePrimaryRay(i, j, camera.Width(), camera.Height(), &primaryRay, &camera);
 	
-	pixel.SetColor(Trace<0>(primaryRay, scene));
+	pixel.SetColor(Trace(primaryRay, scene, 0));
 
 	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+0] = pixel.r;
 	pixels[((camera.Height()-1-j)*camera.Width() + i)*4+1] = pixel.g;

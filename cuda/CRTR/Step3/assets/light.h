@@ -9,14 +9,20 @@
 
 struct Light
 {
-	public:
-		Vec3 position;
+	private:
 		//TODO: replace brightness with color
 		float brightness;
+	public:
+		Vec3 position;
 		
 		CUDA_CALLABLE_MEMBER Light(Vec3 pos, float bright)
 		{
 			position = pos;
 			brightness = bright;
+		}
+
+		CUDA_CALLABLE_MEMBER float Brightness(float distance)
+		{
+			return brightness;// / (distance * distance);
 		}
 };

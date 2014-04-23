@@ -46,7 +46,7 @@ struct Camera
 			// orientation.Identify();
 		// }
 		
-		CUDA_CALLABLE_MEMBER Camera(Transform inTransform, float inFovy, int width, int height)
+		CUDA_CALLABLE_MEMBER Camera(Transform inTransform, float inFovy, int width, int height, float inCenterDistance = 20)
 		{
 			orientation = inTransform;
 			fovy = inFovy;
@@ -55,7 +55,7 @@ struct Camera
 			aRatio = (float)m_width/(float)m_height;
 			vpd = 1;
 			viewPlane = ViewPlane(fovy, vpd, aRatio, orientation);
-			centerDistance = /*(Vec3() - */orientation.Pos()/*)*/.length();
+			centerDistance = inCenterDistance /*orientation.Pos().length()*/;
 		}
 
 		CUDA_CALLABLE_MEMBER Camera(const Camera &camera)
@@ -84,5 +84,6 @@ struct Camera
 		CUDA_CALLABLE_MEMBER int Width() {return m_width;}
 		CUDA_CALLABLE_MEMBER int Height() {return m_height;}
 		CUDA_CALLABLE_MEMBER Vec3 Center() {return orientation.Pos() + orientation.Forward() * centerDistance;}
+		CUDA_CALLABLE_MEMBER float CenterDistance() {return centerDistance;}
 		CUDA_CALLABLE_MEMBER ViewPlane GetViewPlane() {return viewPlane;}
 };
