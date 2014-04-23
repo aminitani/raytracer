@@ -116,6 +116,16 @@ BEGIN
         MENUITEM "Start",                       ID_RENDER_START
         MENUITEM "Turntable",                   ID_RENDER_TURNTABLE
     END
+    POPUP "Compute Device"
+    BEGIN
+        MENUITEM "GPU Acceleration",            ID_COMPUTEDEVICE_GPU
+        POPUP "CPU Threads"
+        BEGIN
+            MENUITEM "1",                           ID_CPUTHREADS_1, CHECKED
+            MENUITEM "4",                           ID_CPUTHREADS_4
+            MENUITEM "8",                           ID_CPUTHREADS_8
+        END
+    END
 END
 
 

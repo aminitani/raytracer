@@ -41,6 +41,9 @@ CChildView::CChildView(int width, int height)
 {
     SetDoubleBuffer(true);
 
+	useGPU = true;
+	numThreads = 1;
+
     //m_senorFishyFish.LoadFile(L"models/BLUEGILL.bmp");
 	//m_fish.SetTexture(&m_senorFishyFish);
 	//m_fish.LoadOBJ("models\\fish4.obj");
@@ -68,7 +71,7 @@ CChildView::CChildView(int width, int height)
 	LoadOBJ(fileOBJ);
 	scene = new Scene(numTris, triVerts, triNorms);
 
-	//raytracer = new Raytracer(m_width, m_height, pixels, *camera);
+	raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
 	pendingRending = false;
 
@@ -119,6 +122,14 @@ BEGIN_MESSAGE_MAP(CChildView,COpenGLWnd )
 	ON_COMMAND(ID_RENDER_TURNTABLE, &CChildView::OnRenderTurntable)
 	ON_WM_TIMER()
 	ON_UPDATE_COMMAND_UI(ID_RENDER_TURNTABLE, &CChildView::OnUpdateRenderTurntable)
+	ON_COMMAND(ID_COMPUTEDEVICE_GPU, &CChildView::OnComputedeviceGpu)
+	ON_UPDATE_COMMAND_UI(ID_COMPUTEDEVICE_GPU, &CChildView::OnUpdateComputedeviceGpu)
+	ON_COMMAND(ID_CPUTHREADS_1, &CChildView::OnCputhreads1)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_1, &CChildView::OnUpdateCputhreads1)
+	ON_COMMAND(ID_CPUTHREADS_8, &CChildView::OnCputhreads8)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_8, &CChildView::OnUpdateCputhreads8)
+	ON_COMMAND(ID_CPUTHREADS_4, &CChildView::OnCputhreads4)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_4, &CChildView::OnUpdateCputhreads4)
 END_MESSAGE_MAP()
 
 
@@ -283,10 +294,17 @@ void CChildView::Render()
 		readyToRender = false;
 		//renderTest(devPtr, m_width, m_height);
 
-		CUDAThrender(devPtr, *camera, *scene);
-		cudaDeviceSynchronize();
-		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
-		
+		if(useGPU) {	// GPU render
+			CUDAThrender(devPtr, *camera, *scene);
+			cudaDeviceSynchronize();
+			cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
+		} else {		// CPU render
+			raytracer->Render(numThreads, *scene, *camera);
+			// swap buffer
+			float * tmp = pixels;
+			pixels = raytracer->buffer;
+			raytracer->buffer = tmp;
+		}
 		Invalidate();
 		
 		readyToRender = true;
@@ -561,4 +579,52 @@ void CChildView::AnalyzeOBJ(const char *filename)
 		else if(code == "f")
 			numTris++;
 	}
+}
+
+void CChildView::OnComputedeviceGpu()
+{
+	// TODO: Add your command handler code here
+	useGPU = !useGPU;
+}
+
+
+void CChildView::OnUpdateComputedeviceGpu(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(useGPU);
+}
+
+
+void CChildView::OnCputhreads1()
+{
+	numThreads = 1;
+}
+
+
+void CChildView::OnUpdateCputhreads1(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==1);
+}
+
+
+void CChildView::OnCputhreads8()
+{
+	numThreads = 8;
+}
+
+
+void CChildView::OnUpdateCputhreads8(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==8);
+}
+
+
+void CChildView::OnCputhreads4()
+{
+	numThreads = 4;
+}
+
+
+void CChildView::OnUpdateCputhreads4(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==4);
 }
