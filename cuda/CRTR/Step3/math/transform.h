@@ -370,44 +370,44 @@ struct Transform
 			return *this;
 		}
 		
-		 Transform& operator*=(const Transform& other) // compound assignment
-		 {
-			 Transform output;
-			 for(int row = 0; row < 4; row++)
-			 {
-				 for(int col = 0; col < 4; col++)
-				 {
-					 float sum = 0;
-					 for(int k = 0; k < (*this).GetCols(); k++)
-					 {
-						 sum = sum + (*this).GetIndex(row, k) * other.GetIndex(k, col);
-					 }
-					 output(row,col) = sum;
-				 }
-			 }
+		CUDA_CALLABLE_MEMBER Transform& operator*=(const Transform& other) // compound assignment
+		{
+			Transform output;
+			for(int row = 0; row < 4; row++)
+			{
+				for(int col = 0; col < 4; col++)
+				{
+					float sum = 0;
+					for(int k = 0; k < (*this).GetCols(); k++)
+					{
+						sum = sum + (*this).GetIndex(row, k) * other.GetIndex(k, col);
+					}
+					output(row,col) = sum;
+				}
+			}
 
-			 (*this) = output;
-			 return *this; // return the result by reference
-		 }
+			(*this) = output;
+			return *this; // return the result by reference
+		}
 		
-		 Transform operator*(const Transform& other) // compound assignment
-		 {
-			 Transform output;
-			 for(int row = 0; row < 4; row++)
-			 {
-				 for(int col = 0; col < 4; col++)
-				 {
-					 float sum = 0;
-					 for(int k = 0; k < (*this).GetCols(); k++)
-					 {
-						 sum = sum + (*this).GetIndex(row, k) * other.GetIndex(k, col);
-					 }
-					 output(row,col) = sum;
-				 }
-			 }
+		CUDA_CALLABLE_MEMBER Transform operator*(const Transform& other) // compound assignment
+		{
+			Transform output;
+			for(int row = 0; row < 4; row++)
+			{
+				for(int col = 0; col < 4; col++)
+				{
+					float sum = 0;
+					for(int k = 0; k < (*this).GetCols(); k++)
+					{
+						sum = sum + (*this).GetIndex(row, k) * other.GetIndex(k, col);
+					}
+					output(row,col) = sum;
+				}
+			}
 
-			 return output; // return the result by reference
-		 }
+			return output; // return the result by reference
+		}
 };
 
 //ostream& operator<<(ostream& Out, const Transform& Item);
