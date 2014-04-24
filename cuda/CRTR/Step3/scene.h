@@ -18,13 +18,13 @@ struct Scene
 	Light *light;
 	//unsigned numLights;
 
-	CUDA_CALLABLE_MEMBER Scene(unsigned numTris, Vec3 *triVerts, Vec3 *triNorms)
+	CUDA_CALLABLE_MEMBER Scene(unsigned numTris, Vec3 *triVerts)
 	{
 		numTriangles = numTris;
 		triangles = (Triangle *) malloc (numTriangles * sizeof(Triangle));
 		
 		for(unsigned i=0; i<numTriangles; i++)
-			triangles[i] = Triangle(triVerts[i*3], triVerts[i*3+1], triVerts[i*3+2], triNorms[i], Material(0, 0, 1.5, Vec3(0.0,0.0,0.4)));
+			triangles[i] = Triangle(triVerts[i*3], triVerts[i*3+1], triVerts[i*3+2], Material(0, 0, 1.5, Vec3(0.0,0.0,0.4)));
 		
 		light = new Light(Vec3(-3, 2, 5), 0.8);
 		//light = new Light(Vec3(-3.0,10.0,3.0), .8);

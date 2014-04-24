@@ -90,7 +90,7 @@
       <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalIncludeDirectories>.</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(CUDA_PATH)/include;</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_AFXDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -99,7 +99,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>.\Release/lab.pdb</ProgramDatabaseFile>
@@ -107,6 +107,7 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <AdditionalLibraryDirectories>$(CUDA_PATH)/lib/Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

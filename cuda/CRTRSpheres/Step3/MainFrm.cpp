@@ -39,8 +39,8 @@ static UINT indicators[] =
 
 CMainFrame::CMainFrame()
 {
-	m_width = 640;
-	m_height = 480;
+	m_width = 1920;
+	m_height = 1080;
 	m_wndView = new CChildView(m_width, m_height);
 }
 

@@ -96,12 +96,8 @@ private:
 	void AnalyzeOBJ(const char *filename);
 	void LoadOBJ(const char *filename);
 	Vec3 *vertices;
-	Vec3 *normals;
-	Vec3 *normalAverager;
-	Vec3 *triNorms;
 	Vec3 *triVerts; //this contains the contents of the vertices array(with duplicates) ordered properly for Triangle construction.
 	unsigned numVerts;
-	unsigned numNorms;
 	unsigned numTris;
 
 public:
