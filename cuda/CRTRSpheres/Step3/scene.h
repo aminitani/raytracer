@@ -30,7 +30,7 @@ struct Scene
 
 
 		spheres[0] = Sphere(Vec3(0, -10004, 0), 10000, Material(0, .2, 1.5, Vec3(.6)));
-		spheres[1] = Sphere(Vec3(0, 0, 0), 4, Material(.5, 1, 1.5, Vec3(1.00, 0.32, 0.36)));
+		spheres[1] = Sphere(Vec3(0, 0, 0), 4, Material(.5, 1, 1.2, Vec3(1.00, 0.32, 0.36)));
 		spheres[2] = Sphere(Vec3(5, -1, 5), 2, Material(0, 1, 1.5, Vec3(0.90, 0.76, 0.46)));
 		spheres[3] = Sphere(Vec3(5, 0, -5), 3, Material(0, 1, 1.5, Vec3(0.65, 0.77, 0.97)));
 		spheres[4] = Sphere(Vec3(-5.5, 0, 5), 3, Material(0, 1, 1.5, Vec3(0.90, 0.90, 0.90)));

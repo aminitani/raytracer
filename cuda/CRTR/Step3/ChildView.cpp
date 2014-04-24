@@ -59,7 +59,7 @@ CChildView::CChildView(int width, int height)
 	
 	//construct scene
 	//char *fileOBJ = new char[256];
-	char *fileOBJ = "models\\cube.obj"; //fish4 or cube
+	char *fileOBJ = "models\\gear.obj"; //fish4 or cube
 	numVerts = 0;
 	numTris = 0;
 	AnalyzeOBJ(fileOBJ);

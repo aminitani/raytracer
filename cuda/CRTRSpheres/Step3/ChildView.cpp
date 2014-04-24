@@ -412,7 +412,7 @@ void CChildView::OnRenderTurntable()
     if(tTTimer == 0)
     {
         // Create the timer
-        tTTimer = SetTimer(1, 30, NULL);
+        tTTimer = SetTimer(1, 15, NULL);
     }
     else
     {
