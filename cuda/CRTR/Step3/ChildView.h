@@ -103,7 +103,6 @@ private:
 	unsigned numVerts;
 	unsigned numNorms;
 	unsigned numTris;
-	char *fileOBJ; //The OBJ file to be loaded
 
 public:
 	afx_msg void OnRenderStart();

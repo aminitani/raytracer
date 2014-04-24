@@ -39,6 +39,9 @@ CChildView::CChildView(int width, int height)
 {
     SetDoubleBuffer(true);
 
+	useGPU = true;
+	numThreads = 1;
+
     //m_senorFishyFish.LoadFile(L"models/BLUEGILL.bmp");
 	//m_fish.SetTexture(&m_senorFishyFish);
 	//m_fish.LoadOBJ("models\\fish4.obj");
@@ -53,6 +56,8 @@ CChildView::CChildView(int width, int height)
 	camera = new Camera(Transform::TransformFromPos(Vec3(0, 0, 20)).RotateOnYAroundSelf(180)/*Transform(camTrans)*/, GR_PI * 55.0 / 180.0, m_width, m_height);
 
 	scene = new Scene();
+
+	raytracer = new Raytracer(pixels, *camera, *scene);
 
 	//raytracer = new Raytracer(m_width, m_height, pixels, *camera);
 	readyToRender = true;
@@ -77,8 +82,8 @@ CChildView::~CChildView()
 	camera = NULL;
 	delete [] pixels;
 	pixels = NULL;
-	//delete raytracer;
-	//raytracer = NULL;
+	delete raytracer;
+	raytracer = NULL;
 	delete scene;
 	scene = NULL;
 
@@ -99,6 +104,14 @@ BEGIN_MESSAGE_MAP(CChildView,COpenGLWnd )
 	ON_COMMAND(ID_RENDER_TURNTABLE, &CChildView::OnRenderTurntable)
 	ON_WM_TIMER()
 	ON_UPDATE_COMMAND_UI(ID_RENDER_TURNTABLE, &CChildView::OnUpdateRenderTurntable)
+	ON_COMMAND(ID_COMPUTEDEVICE_GPUACCELERATION, &CChildView::OnComputedeviceGpuacceleration)
+	ON_UPDATE_COMMAND_UI(ID_COMPUTEDEVICE_GPUACCELERATION, &CChildView::OnUpdateComputedeviceGpuacceleration)
+	ON_COMMAND(ID_CPUTHREADS_1, &CChildView::OnCputhreads1)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_1, &CChildView::OnUpdateCputhreads1)
+	ON_COMMAND(ID_CPUTHREADS_4, &CChildView::OnCputhreads4)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_4, &CChildView::OnUpdateCputhreads4)
+	ON_COMMAND(ID_CPUTHREADS_8, &CChildView::OnCputhreads8)
+	ON_UPDATE_COMMAND_UI(ID_CPUTHREADS_8, &CChildView::OnUpdateCputhreads8)
 END_MESSAGE_MAP()
 
 
@@ -248,25 +261,23 @@ GLvoid CChildView::GLPrint(const char *fmt, ...)					// Custom GL "Print" Routin
 	glPopAttrib();										// Pops The Display List Bits
 }
 
-void CChildView::TurnTable()
-{
-	//want to rotate camera x degrees around center where x depends on time
-	//camera.orientation.forward = (center - eye).normalize();
-	//camera.orientation.right = vec3(cos(90deg + angle), 0, -sin(90deg+angle));
-	//camera.orientation.up = right cross forward;
-}
-
 void CChildView::Render()
 {
 	if(readyToRender)
 	{
 		readyToRender = false;
-		//renderTest(devPtr, m_width, m_height);
 
-		CUDAThrender(devPtr, *camera, *scene);
-		cudaDeviceSynchronize();
-		cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
-		
+		if(useGPU) {	// GPU render
+			CUDAThrender(devPtr, *camera, *scene);
+			cudaDeviceSynchronize();
+			cudaMemcpy(pixels, devPtr, m_width * m_height * 4 * sizeof(float), cudaMemcpyDeviceToHost);
+		} else {		// CPU render
+			raytracer->Render(numThreads, *scene, *camera);
+			// swap buffer
+			float * tmp = pixels;
+			pixels = raytracer->buffer;
+			raytracer->buffer = tmp;
+		}
 		Invalidate();
 		
 		readyToRender = true;
@@ -443,4 +454,52 @@ void CChildView::OnTimer(UINT_PTR nIDEvent)
 void CChildView::OnUpdateRenderTurntable(CCmdUI *pCmdUI)
 {
 	pCmdUI->SetCheck(tTTimer != 0);
+}
+
+
+void CChildView::OnComputedeviceGpuacceleration()
+{
+	useGPU = !useGPU;
+}
+
+
+void CChildView::OnUpdateComputedeviceGpuacceleration(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(useGPU);
+}
+
+
+void CChildView::OnCputhreads1()
+{
+	numThreads = 1;
+}
+
+
+void CChildView::OnUpdateCputhreads1(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==1);
+}
+
+
+void CChildView::OnCputhreads4()
+{
+	numThreads = 4;
+}
+
+
+void CChildView::OnUpdateCputhreads4(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==4);
+}
+
+
+void CChildView::OnCputhreads8()
+{
+	numThreads = 8;
+}
+
+
+void CChildView::OnUpdateCputhreads8(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(numThreads==8);
 }

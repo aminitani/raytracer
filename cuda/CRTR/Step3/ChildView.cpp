@@ -58,7 +58,8 @@ CChildView::CChildView(int width, int height)
 	camera = new Camera(Transform::TransformFromPos(Vec3(0, 0, 20)).RotateOnYAroundSelf(180)/*Transform(camTrans)*/, GR_PI * 55.0 / 180.0, m_width, m_height);
 	
 	//construct scene
-	fileOBJ = "models\\cube.obj"; //fish4 or cube
+	//char *fileOBJ = new char[256];
+	char *fileOBJ = "models\\cube.obj"; //fish4 or cube
 	numVerts = 0;
 	numNorms = 0;
 	numTris = 0;
@@ -69,9 +70,11 @@ CChildView::CChildView(int width, int height)
 	triNorms = new Vec3[numTris];
 	normalAverager = new Vec3[3];
 	LoadOBJ(fileOBJ);
+	//delete [] fileOBJ;//I cause an error because I have no manners
+	//delete fileOBJ;
 	scene = new Scene(numTris, triVerts, triNorms);
 
-	raytracer = new Raytracer(m_width, m_height, pixels, *camera, *scene);
+	raytracer = new Raytracer(pixels, *camera, *scene);
 	readyToRender = true;
 	pendingRending = false;
 
@@ -89,23 +92,22 @@ CChildView::CChildView(int width, int height)
 
 CChildView::~CChildView()
 {
+	KillFont();
 	cudaFree((void**)&devPtr);
 	delete camera;
 	camera = NULL;
 	delete [] pixels;
 	pixels = NULL;
-	//delete raytracer;
-	//raytracer = NULL;
+	delete raytracer;
+	raytracer = NULL;
+	delete scene;
+	scene = NULL;
 	delete [] vertices;
 	delete [] normals;
 	delete [] triVerts;
 	delete [] triNorms;
 	delete [] normalAverager;
-	delete [] fileOBJ;
-	delete scene;
-	scene = NULL;
-
-	KillFont();
+	//delete [] fileOBJ;
 }
 
 
@@ -279,20 +281,11 @@ GLvoid CChildView::GLPrint(const char *fmt, ...)					// Custom GL "Print" Routin
 	glPopAttrib();										// Pops The Display List Bits
 }
 
-void CChildView::TurnTable()
-{
-	//want to rotate camera x degrees around center where x depends on time
-	//camera.orientation.forward = (center - eye).normalize();
-	//camera.orientation.right = vec3(cos(90deg + angle), 0, -sin(90deg+angle));
-	//camera.orientation.up = right cross forward;
-}
-
 void CChildView::Render()
 {
 	if(readyToRender)
 	{
 		readyToRender = false;
-		//renderTest(devPtr, m_width, m_height);
 
 		if(useGPU) {	// GPU render
 			CUDAThrender(devPtr, *camera, *scene);
@@ -492,7 +485,7 @@ void CChildView::OnUpdateRenderTurntable(CCmdUI *pCmdUI)
 }
 
 
-void CChildView::LoadOBJ(const char *filename)
+void CChildView::LoadOBJ(const char filename[])
 {
 	std::ifstream str(filename);
 	if(!str)
@@ -556,7 +549,7 @@ void CChildView::LoadOBJ(const char *filename)
 }
 
 
-void CChildView::AnalyzeOBJ(const char *filename)
+void CChildView::AnalyzeOBJ(const char filename[])
 {
 	std::ifstream str(filename);
 	if(!str)
@@ -583,7 +576,6 @@ void CChildView::AnalyzeOBJ(const char *filename)
 
 void CChildView::OnComputedeviceGpu()
 {
-	// TODO: Add your command handler code here
 	useGPU = !useGPU;
 }
 

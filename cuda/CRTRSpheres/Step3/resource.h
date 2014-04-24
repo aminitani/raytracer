@@ -29,6 +29,11 @@
 #define ID_STEP_ORGAN                   32792
 #define ID_RENDER_START                 32793
 #define ID_RENDER_TURNTABLE             32794
+#define ID_COMPUTEDEVICE_GPUACCELERATION 32795
+#define ID_COMPUTEDEVICE_CPUTHREADS     32796
+#define ID_CPUTHREADS_1                 32797
+#define ID_CPUTHREADS_4                 32798
+#define ID_CPUTHREADS_8                 32799
 
 // Next default values for new objects
 // 
@@ -36,7 +41,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        132
-#define _APS_NEXT_COMMAND_VALUE         32795
+#define _APS_NEXT_COMMAND_VALUE         32800
 #define _APS_NEXT_CONTROL_VALUE         1002
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

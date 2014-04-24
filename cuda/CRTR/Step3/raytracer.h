@@ -1,5 +1,4 @@
 //TODO: multiple additive lights
-//TODO: inverse square light falloff
 
 #include <iostream>
 #include <vector>
@@ -10,7 +9,7 @@
 #include "./math/transform.h"
 #include "./assets/image.h"
 #include "./assets/camera.h"
-#include "./assets/sphere.h"
+//#include "./assets/sphere.h"
 #include "./assets/triangle.h"
 #include "./assets/light.h"
 #include "./math/ray.h"
@@ -27,11 +26,9 @@ class Raytracer
 {
 	private:
 		float INFINITY;
-		Image *image;
+		//Image *image;
 		Camera *camera;//note that there are two cameras; childview's updates constantly, while this gets 'snapshots' every rendered frame
-		vector<Triangle *> triangles;
 		Scene *scene;
-		Light *light;
 		float *pixels;//the pixel buffer shared between the childview and this raytracer
 
 		unsigned int m_width, m_height;
@@ -47,16 +44,16 @@ class Raytracer
 		float *buffer;//write to this, then push into pixels when the whole image is done
 
 
-		Raytracer(int width, int height, float *inPixels, Camera inCamera, Scene inScene)
+		Raytracer(float *inPixels, Camera inCamera, Scene inScene)
 		{
 			INFINITY = std::numeric_limits<float>::infinity();
 			//image = new Image(width, height, "test.png");
-			m_width = width; m_height = height;
+			m_width = inCamera.Width(); m_height = inCamera.Height();
 			camera = new Camera(Transform(), 0, 0, 0);
 			*camera = inCamera;
 
 			pixels = inPixels;
-			buffer = new float[width*height*4];
+			buffer = new float[m_width*m_height*4];
 
 			defaultColor = Vec3(0.3);
 			BLACK = Vec3(0.0);
@@ -65,21 +62,15 @@ class Raytracer
 		
 		~Raytracer()
 		{
-			delete image;
-			image = NULL;
+//			delete image;
+//			image = NULL;
+
+			delete scene;
+			scene = NULL;
 			
 			delete camera;
 			camera = NULL;
 			
-			for(Triangle *tri : triangles)
-			{
-				delete tri;
-				tri = NULL;
-			}
-			
-			delete light;
-			light = NULL;
-
 			delete [] buffer;
 			buffer = NULL;
 			
@@ -287,6 +278,8 @@ class Raytracer
 		void Render(int numThreads, Scene scene, Camera newCam)
 		{
 			*camera = newCam;
+			m_width = camera->Width();
+			m_height = camera->Height();
 			*this->scene = scene;
 			start = std::chrono::high_resolution_clock::now();
 			
